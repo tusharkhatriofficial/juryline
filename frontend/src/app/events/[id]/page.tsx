@@ -46,7 +46,7 @@ import { CriteriaTab } from "@/components/event/CriteriaTab";
 import { JudgesTab } from "@/components/event/JudgesTab";
 import { SettingsTab } from "@/components/event/SettingsTab";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const STATUS_COLORS: Record<string, string> = {
     draft: "gray",

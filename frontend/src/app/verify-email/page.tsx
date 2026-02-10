@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { HiOutlineEnvelope } from "react-icons/hi2";
 import { createClient } from "@/lib/supabase/client";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams();

@@ -29,7 +29,7 @@ import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { createEvent } from "@/lib/api-services";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 function CreateEventContent() {
     const router = useRouter();
@@ -177,7 +177,7 @@ function CreateEventContent() {
                                     min={1}
                                     max={10}
                                     value={judgesPerSubmission}
-                                    onChange={(_, val) => setJudgesPerSubmission(val)}
+                                    onChange={(_, val) => setJudgesPerSubmission(isNaN(val) ? 2 : val)}
                                 >
                                     <NumberInputField color="white" />
                                     <NumberInputStepper>

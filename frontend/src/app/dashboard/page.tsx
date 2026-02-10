@@ -43,7 +43,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { listEvents, deleteEvent } from "@/lib/api-services";
 import type { Event } from "@/lib/types";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const STATUS_COLORS: Record<string, string> = {
     draft: "gray",

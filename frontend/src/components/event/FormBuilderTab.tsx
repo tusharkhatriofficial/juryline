@@ -46,7 +46,7 @@ import {
 } from "@/lib/api-services";
 import type { FormField, FieldType } from "@/lib/types";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 const FIELD_TYPE_OPTIONS: { value: FieldType; label: string; icon: string }[] = [
     { value: "short_text", label: "Short Text", icon: "Aa" },

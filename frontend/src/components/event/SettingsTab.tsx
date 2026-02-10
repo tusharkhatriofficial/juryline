@@ -147,7 +147,7 @@ export function SettingsTab({ event, setEvent, isDraft }: SettingsTabProps) {
                             min={1}
                             max={10}
                             value={judgesPerSubmission}
-                            onChange={(_, val) => setJudgesPerSubmission(val)}
+                            onChange={(_, val) => setJudgesPerSubmission(isNaN(val) ? 2 : val)}
                         >
                             <NumberInputField color="white" />
                             <NumberInputStepper>

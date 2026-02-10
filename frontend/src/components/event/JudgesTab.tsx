@@ -34,7 +34,7 @@ import {
 import { inviteJudge, removeJudge } from "@/lib/api-services";
 import type { EventJudge } from "@/lib/types";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 interface JudgesTabProps {
     eventId: string;

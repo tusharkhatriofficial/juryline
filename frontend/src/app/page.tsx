@@ -18,7 +18,7 @@ import {
   HiOutlineUserGroup,
 } from "react-icons/hi2";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 const MotionVStack = motion(VStack);
 
 export default function Home() {

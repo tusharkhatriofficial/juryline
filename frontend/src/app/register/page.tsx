@@ -26,7 +26,7 @@ import { motion } from "framer-motion";
 import { HiOutlineEye, HiOutlineEyeSlash } from "react-icons/hi2";
 import { createClient } from "@/lib/supabase/client";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
     if (!pw) return { score: 0, label: "", color: "gray" };

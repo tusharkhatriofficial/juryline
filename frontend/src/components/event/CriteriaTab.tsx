@@ -35,7 +35,7 @@ import {
 import { addCriterion, updateCriterion, deleteCriterion } from "@/lib/api-services";
 import type { Criterion } from "@/lib/types";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 interface CriteriaTabProps {
     eventId: string;
@@ -225,7 +225,7 @@ export function CriteriaTab({ eventId, criteria, setCriteria, isDraft }: Criteri
                                     min={0}
                                     max={100}
                                     value={newMin}
-                                    onChange={(_, val) => setNewMin(val)}
+                                    onChange={(_, val) => setNewMin(isNaN(val) ? 0 : val)}
                                     size="sm"
                                 >
                                     <NumberInputField color="white" />
@@ -241,7 +241,7 @@ export function CriteriaTab({ eventId, criteria, setCriteria, isDraft }: Criteri
                                     min={1}
                                     max={100}
                                     value={newMax}
-                                    onChange={(_, val) => setNewMax(val)}
+                                    onChange={(_, val) => setNewMax(isNaN(val) ? 10 : val)}
                                     size="sm"
                                 >
                                     <NumberInputField color="white" />
@@ -258,7 +258,7 @@ export function CriteriaTab({ eventId, criteria, setCriteria, isDraft }: Criteri
                                     max={100}
                                     step={0.5}
                                     value={newWeight}
-                                    onChange={(_, val) => setNewWeight(val)}
+                                    onChange={(_, val) => setNewWeight(isNaN(val) ? 1 : val)}
                                     size="sm"
                                 >
                                     <NumberInputField color="white" />
@@ -324,19 +324,19 @@ export function CriteriaTab({ eventId, criteria, setCriteria, isDraft }: Criteri
                                     <SimpleGrid columns={3} spacing={3}>
                                         <FormControl>
                                             <FormLabel color="whiteAlpha.700" fontSize="xs">Min</FormLabel>
-                                            <NumberInput min={0} max={100} value={editMin} onChange={(_, v) => setEditMin(v)} size="sm">
+                                            <NumberInput min={0} max={100} value={editMin} onChange={(_, v) => setEditMin(isNaN(v) ? 0 : v)} size="sm">
                                                 <NumberInputField color="white" />
                                             </NumberInput>
                                         </FormControl>
                                         <FormControl>
                                             <FormLabel color="whiteAlpha.700" fontSize="xs">Max</FormLabel>
-                                            <NumberInput min={1} max={100} value={editMax} onChange={(_, v) => setEditMax(v)} size="sm">
+                                            <NumberInput min={1} max={100} value={editMax} onChange={(_, v) => setEditMax(isNaN(v) ? 10 : v)} size="sm">
                                                 <NumberInputField color="white" />
                                             </NumberInput>
                                         </FormControl>
                                         <FormControl>
                                             <FormLabel color="whiteAlpha.700" fontSize="xs">Weight</FormLabel>
-                                            <NumberInput min={0} max={100} step={0.5} value={editWeight} onChange={(_, v) => setEditWeight(v)} size="sm">
+                                            <NumberInput min={0} max={100} step={0.5} value={editWeight} onChange={(_, v) => setEditWeight(isNaN(v) ? 1 : v)} size="sm">
                                                 <NumberInputField color="white" />
                                             </NumberInput>
                                         </FormControl>
