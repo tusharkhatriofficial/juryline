@@ -38,6 +38,7 @@ app.add_middleware(
         settings.frontend_url,
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://localhost:4000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
