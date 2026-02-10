@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
     Box,
@@ -9,23 +9,46 @@ import {
     Text,
     Button,
     VStack,
+    HStack,
     Input,
+    InputGroup,
+    InputRightElement,
+    IconButton,
     FormControl,
     FormLabel,
     FormErrorMessage,
     Select,
     Link,
+    Progress,
     useToast,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import { HiOutlineEye, HiOutlineEyeSlash } from "react-icons/hi2";
 import { createClient } from "@/lib/supabase/client";
 
 const MotionBox = motion(Box);
+
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+    if (!pw) return { score: 0, label: "", color: "gray" };
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    if (score <= 1) return { score: 20, label: "Weak", color: "red" };
+    if (score === 2) return { score: 40, label: "Fair", color: "orange" };
+    if (score === 3) return { score: 60, label: "Good", color: "yellow" };
+    if (score === 4) return { score: 80, label: "Strong", color: "green" };
+    return { score: 100, label: "Very Strong", color: "cyan" };
+}
 
 export default function RegisterPage() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [role, setRole] = useState("participant");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -33,6 +56,8 @@ export default function RegisterPage() {
     const router = useRouter();
     const toast = useToast();
     const supabase = createClient();
+
+    const strength = useMemo(() => getPasswordStrength(password), [password]);
 
     const validate = () => {
         const errs: Record<string, string> = {};
@@ -147,13 +172,52 @@ export default function RegisterPage() {
                             <FormLabel color="whiteAlpha.700" fontSize="sm">
                                 Password
                             </FormLabel>
-                            <Input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Min 6 characters"
-                                size="lg"
-                            />
+                            <InputGroup size="lg">
+                                <Input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Min 6 characters"
+                                    pr="3rem"
+                                />
+                                <InputRightElement>
+                                    <IconButton
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                        icon={showPassword ? <HiOutlineEyeSlash /> : <HiOutlineEye />}
+                                        size="sm"
+                                        variant="ghost"
+                                        color="whiteAlpha.500"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        _hover={{ color: "whiteAlpha.800" }}
+                                    />
+                                </InputRightElement>
+                            </InputGroup>
+                            {password && (
+                                <Box mt={2}>
+                                    <Progress
+                                        value={strength.score}
+                                        size="xs"
+                                        borderRadius="full"
+                                        colorScheme={strength.color}
+                                        bg="whiteAlpha.100"
+                                        sx={{
+                                            "& > div": {
+                                                transition: "width 0.3s ease, background 0.3s ease",
+                                            },
+                                        }}
+                                    />
+                                    <HStack justify="space-between" mt={1}>
+                                        <Text fontSize="xs" color={`${strength.color}.300`}>
+                                            {strength.label}
+                                        </Text>
+                                        <Text fontSize="xs" color="whiteAlpha.400">
+                                            {password.length < 6
+                                                ? `${6 - password.length} more characters needed`
+                                                : "Looks good"}
+                                        </Text>
+                                    </HStack>
+                                </Box>
+                            )}
                             <FormErrorMessage>{errors.password}</FormErrorMessage>
                         </FormControl>
 

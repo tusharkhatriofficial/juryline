@@ -10,6 +10,9 @@ import {
     Button,
     VStack,
     Input,
+    InputGroup,
+    InputRightElement,
+    IconButton,
     FormControl,
     FormLabel,
     FormErrorMessage,
@@ -20,6 +23,7 @@ import {
     AlertDescription,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
+import { HiOutlineEye, HiOutlineEyeSlash } from "react-icons/hi2";
 import { createClient } from "@/lib/supabase/client";
 
 const MotionBox = motion(Box);
@@ -27,6 +31,7 @@ const MotionBox = motion(Box);
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [unverified, setUnverified] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -157,13 +162,26 @@ export default function LoginPage() {
                             <FormLabel color="whiteAlpha.700" fontSize="sm">
                                 Password
                             </FormLabel>
-                            <Input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Your password"
-                                size="lg"
-                            />
+                            <InputGroup size="lg">
+                                <Input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Your password"
+                                    pr="3rem"
+                                />
+                                <InputRightElement>
+                                    <IconButton
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                        icon={showPassword ? <HiOutlineEyeSlash /> : <HiOutlineEye />}
+                                        size="sm"
+                                        variant="ghost"
+                                        color="whiteAlpha.500"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        _hover={{ color: "whiteAlpha.800" }}
+                                    />
+                                </InputRightElement>
+                            </InputGroup>
                             <FormErrorMessage>{errors.password}</FormErrorMessage>
                         </FormControl>
 
