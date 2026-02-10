@@ -28,10 +28,15 @@ api.interceptors.request.use(async (config) => {
 // Global error handler
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         if (error.response?.status === 401) {
-            // Token expired — redirect to login
-            if (typeof window !== "undefined") {
+            // Only redirect to login if Supabase session is actually gone
+            const supabase = createClient();
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            if (!session && typeof window !== "undefined") {
                 window.location.href = "/login";
             }
         }

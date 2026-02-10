@@ -1,13 +1,12 @@
 """
 Juryline — FastAPI Dependencies
-JWT verification, current user extraction, and role-based guards.
+Token verification via Supabase auth.get_user, current user extraction,
+and role-based guards.
 """
 
 from fastapi import Depends, HTTPException, Header
-import jwt
 from typing import Optional
 
-from app.config import get_settings
 from app.supabase_client import supabase
 
 
@@ -15,28 +14,24 @@ async def get_current_user(authorization: str = Header(...)) -> dict:
     """
     Extract and verify the current user from the Authorization header.
     Expects: 'Bearer <supabase_jwt>'
+    Uses Supabase auth.get_user() so it works regardless of JWT algorithm
+    (HS256, ES256, etc.).
     Returns the user's profile from the profiles table.
     """
-    settings = get_settings()
-
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
 
     token = authorization.replace("Bearer ", "")
 
     try:
-        payload = jwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        auth_response = supabase.auth.get_user(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    user_id = payload.get("sub")
+    if not auth_response or not auth_response.user:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user_id = auth_response.user.id
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token: no subject")
 
@@ -75,15 +70,13 @@ def get_optional_user(authorization: Optional[str] = Header(None)) -> Optional[d
         return None
 
     try:
-        settings = get_settings()
         token = authorization.replace("Bearer ", "")
-        payload = jwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-        user_id = payload.get("sub")
+        auth_response = supabase.auth.get_user(token)
+
+        if not auth_response or not auth_response.user:
+            return None
+
+        user_id = auth_response.user.id
         if not user_id:
             return None
 
