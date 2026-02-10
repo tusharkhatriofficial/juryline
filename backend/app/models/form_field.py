@@ -38,9 +38,14 @@ class FormFieldUpdate(BaseModel):
     validation: Optional[dict] = None
 
 
+class FieldOrderItem(BaseModel):
+    id: str
+    sort_order: int
+
+
 class FormFieldReorder(BaseModel):
     """Batch reorder: list of { id, sort_order }."""
-    field_orders: list[dict]  # [{ "id": "uuid", "sort_order": 0 }, ...]
+    order: list[FieldOrderItem]
 
 
 class FormFieldResponse(BaseModel):
