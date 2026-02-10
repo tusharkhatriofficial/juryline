@@ -65,8 +65,8 @@ async def api_health_check():
     }
 
 
-# ── Routers will be registered here in later phases ──
-# from app.routers import auth, events, submissions, reviews, uploads
-# app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
-# app.include_router(events.router, prefix="/api/v1", tags=["events"])
-# etc.
+# -- Routers --
+from app.routers import auth, profile
+
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(profile.router, prefix="/api/v1")

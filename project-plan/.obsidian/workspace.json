@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "00-overview.md",
+                "file": "01-scaffolding_and_database.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "00-overview"
+              "title": "01-scaffolding_and_database"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "00-overview.md",
+                "file": "01-scaffolding_and_database.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for 00-overview"
+              "title": "Backlinks for 01-scaffolding_and_database"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "00-overview.md",
+                "file": "01-scaffolding_and_database.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from 00-overview"
+              "title": "Outgoing links from 01-scaffolding_and_database"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "00-overview.md",
+                "file": "01-scaffolding_and_database.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of 00-overview"
+              "title": "Outline of 01-scaffolding_and_database"
             }
           }
         ]
@@ -184,5 +184,7 @@
     }
   },
   "active": "b1dde3a5ddd16dd4",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "00-overview.md"
+  ]
 }

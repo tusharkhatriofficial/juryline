@@ -1,29 +1,29 @@
-version: "3.8"
-
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "9000:9000"
     env_file:
       - ./backend/.env
     volumes:
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - /app/venv
+    command: uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "4000:4000"
     env_file:
       - ./frontend/.env
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: npm run dev
+      - /app/.next
+    command: npx next dev --hostname 0.0.0.0 --port 4000
     depends_on:
       - backend
