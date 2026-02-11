@@ -45,6 +45,7 @@ import { FormBuilderTab } from "@/components/event/FormBuilderTab";
 import { CriteriaTab } from "@/components/event/CriteriaTab";
 import { JudgesTab } from "@/components/event/JudgesTab";
 import { SettingsTab } from "@/components/event/SettingsTab";
+import { SubmissionsTab } from "@/components/event/SubmissionsTab";
 
 const MotionBox = motion.create(Box);
 
@@ -231,6 +232,11 @@ function EventDetailContent() {
                                 <Tab color="whiteAlpha.600" _selected={{ color: "white", bg: "brand.500" }}>
                                     Settings
                                 </Tab>
+                                {event && event.status !== "draft" && (
+                                    <Tab color="whiteAlpha.600" _selected={{ color: "white", bg: "brand.500" }}>
+                                        Submissions
+                                    </Tab>
+                                )}
                             </TabList>
 
                             <TabPanels mt={6}>
@@ -264,6 +270,11 @@ function EventDetailContent() {
                                         isDraft={isDraft}
                                     />
                                 </TabPanel>
+                                {event && event.status !== "draft" && (
+                                    <TabPanel p={0}>
+                                        <SubmissionsTab eventId={eventId} />
+                                    </TabPanel>
+                                )}
                             </TabPanels>
                         </Tabs>
                     </MotionBox>

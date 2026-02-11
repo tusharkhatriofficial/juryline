@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { Event, FormField, Criterion, EventJudge } from "@/lib/types";
+import type { Event, FormField, Criterion, EventJudge, Submission } from "@/lib/types";
 
 // ── Events ──
 
@@ -175,4 +175,94 @@ export async function removeJudge(
     judgeRecordId: string
 ): Promise<void> {
     await api.delete(`/events/${eventId}/judges/${judgeRecordId}`);
+}
+
+// ── Uploads (R2 Presigned) ──
+
+export async function getPresignedUploadUrl(
+    filename: string,
+    contentType: string
+): Promise<{ upload_url: string; file_key: string; public_url: string }> {
+    const res = await api.post("/uploads/presign", {
+        filename,
+        content_type: contentType,
+    });
+    return res.data;
+}
+
+export async function uploadFileToR2(
+    file: File,
+    onProgress?: (pct: number) => void
+): Promise<string> {
+    const { upload_url, public_url } = await getPresignedUploadUrl(
+        file.name,
+        file.type
+    );
+
+    await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", upload_url);
+        xhr.setRequestHeader("Content-Type", file.type);
+
+        if (onProgress) {
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    onProgress(Math.round((e.loaded / e.total) * 100));
+                }
+            };
+        }
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve();
+            } else {
+                reject(new Error(`Upload failed: ${xhr.status}`));
+            }
+        };
+        xhr.onerror = () => reject(new Error("Upload failed"));
+        xhr.send(file);
+    });
+
+    return public_url;
+}
+
+// ── Submissions ──
+
+export async function createSubmission(
+    eventId: string,
+    formData: Record<string, any>
+): Promise<Submission> {
+    const res = await api.post(`/events/${eventId}/submissions`, {
+        form_data: formData,
+    });
+    return res.data;
+}
+
+export async function listSubmissions(eventId: string): Promise<Submission[]> {
+    const res = await api.get(`/events/${eventId}/submissions`);
+    return res.data;
+}
+
+export async function getMySubmission(eventId: string): Promise<Submission> {
+    const res = await api.get(`/events/${eventId}/my-submission`);
+    return res.data;
+}
+
+export async function getSubmission(submissionId: string): Promise<Submission> {
+    const res = await api.get(`/submissions/${submissionId}`);
+    return res.data;
+}
+
+export async function updateSubmission(
+    submissionId: string,
+    formData: Record<string, any>
+): Promise<Submission> {
+    const res = await api.put(`/submissions/${submissionId}`, {
+        form_data: formData,
+    });
+    return res.data;
+}
+
+export async function deleteSubmission(submissionId: string): Promise<void> {
+    await api.delete(`/submissions/${submissionId}`);
 }

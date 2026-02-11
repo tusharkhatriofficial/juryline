@@ -418,6 +418,7 @@ function JudgeDashboard() {
 
 function ParticipantDashboard() {
     const { profile } = useAuth();
+    const router = useRouter();
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -475,8 +476,10 @@ function ParticipantDashboard() {
                                     bg="whiteAlpha.50"
                                     border="1px solid"
                                     borderColor="whiteAlpha.100"
-                                    _hover={{ borderColor: "green.400" }}
+                                    _hover={{ borderColor: "green.400", transform: "translateY(-2px)" }}
+                                    transition="all 0.2s"
                                     cursor="pointer"
+                                    onClick={() => router.push(`/submit/${event.id}`)}
                                 >
                                     <Heading size="sm" color="white">{event.name}</Heading>
                                     {event.description && (
@@ -492,6 +495,21 @@ function ParticipantDashboard() {
                                             Ends {new Date(event.end_at).toLocaleDateString()}
                                         </Text>
                                     </HStack>
+                                    {event.status === "open" && (
+                                        <Button
+                                            mt={3}
+                                            size="sm"
+                                            colorScheme="green"
+                                            variant="outline"
+                                            rightIcon={<HiOutlineArrowRight />}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/submit/${event.id}`);
+                                            }}
+                                        >
+                                            Submit Project
+                                        </Button>
+                                    )}
                                 </MotionBox>
                             ))}
                         </SimpleGrid>
