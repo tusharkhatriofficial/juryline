@@ -50,6 +50,7 @@ import { CriteriaTab } from "@/components/event/CriteriaTab";
 import { JudgesTab } from "@/components/event/JudgesTab";
 import { SettingsTab } from "@/components/event/SettingsTab";
 import { SubmissionsTab } from "@/components/event/SubmissionsTab";
+import { DashboardTab } from "@/components/event/DashboardTab";
 
 const MotionBox = motion.create(Box);
 
@@ -314,6 +315,11 @@ function EventDetailContent() {
                                         Submissions
                                     </Tab>
                                 )}
+                                {event && (event.status === "judging" || event.status === "closed") && (
+                                    <Tab color="whiteAlpha.600" _selected={{ color: "white", bg: "brand.500" }}>
+                                        Dashboard
+                                    </Tab>
+                                )}
                             </TabList>
 
                             <TabPanels mt={6}>
@@ -350,6 +356,11 @@ function EventDetailContent() {
                                 {event && event.status !== "draft" && (
                                     <TabPanel p={0}>
                                         <SubmissionsTab eventId={eventId} />
+                                    </TabPanel>
+                                )}
+                                {event && (event.status === "judging" || event.status === "closed") && (
+                                    <TabPanel p={0}>
+                                        <DashboardTab eventId={eventId} />
                                     </TabPanel>
                                 )}
                             </TabPanels>

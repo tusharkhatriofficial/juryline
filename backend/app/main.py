@@ -67,7 +67,7 @@ async def api_health_check():
 
 
 # -- Routers --
-from app.routers import auth, profile, events, form_fields, criteria, judges, uploads, submissions, reviews, archestra
+from app.routers import auth, profile, events, form_fields, criteria, judges, uploads, submissions, reviews, archestra, dashboard
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(profile.router, prefix="/api/v1")
@@ -79,3 +79,4 @@ app.include_router(uploads.router, prefix="/api/v1")
 app.include_router(submissions.router, prefix="/api/v1")
 app.include_router(reviews.router, prefix="/api/v1")
 app.include_router(archestra.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")

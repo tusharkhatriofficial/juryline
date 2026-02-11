@@ -300,3 +300,108 @@ export async function listEventReviews(eventId: string): Promise<Review[]> {
     const res = await api.get(`/events/${eventId}/reviews`);
     return res.data;
 }
+
+// ── Dashboard & Scoring ──
+
+export async function getDashboard(eventId: string): Promise<{
+    event: Event;
+    stats: {
+        total_submissions: number;
+        total_judges: number;
+        total_reviews: number;
+        reviews_completed: number;
+        reviews_pending: number;
+        completion_percent: number;
+        avg_score: number | null;
+    };
+    judge_progress: Array<{
+        judge_id: string;
+        judge_name: string;
+        assigned: number;
+        completed: number;
+        percent: number;
+        status: string;
+    }>;
+    leaderboard: Array<{
+        rank: number;
+        submission_id: string;
+        project_name: string;
+        weighted_score: number;
+        criteria_scores: Record<string, {
+            criterion_name: string;
+            average: number;
+            min_score: number;
+            max_score: number;
+            weight: number;
+        }>;
+        review_count: number;
+    }>;
+}> {
+    const res = await api.get(`/events/${eventId}/dashboard`);
+    return res.data;
+}
+
+export async function getLeaderboard(eventId: string): Promise<Array<{
+    rank: number;
+    submission_id: string;
+    project_name: string;
+    weighted_score: number;
+    criteria_scores: Record<string, any>;
+    review_count: number;
+}>> {
+    const res = await api.get(`/events/${eventId}/leaderboard`);
+    return res.data;
+}
+
+export async function getJudgeProgress(eventId: string): Promise<Array<{
+    judge_id: string;
+    judge_name: string;
+    assigned: number;
+    completed: number;
+    percent: number;
+    status: string;
+}>> {
+    const res = await api.get(`/events/${eventId}/judge-progress`);
+    return res.data;
+}
+
+export async function getBiasReport(eventId: string): Promise<Array<{
+    judge_id: string;
+    judge_name: string;
+    avg_score_given: number;
+    event_avg: number;
+    deviation: number;
+    is_outlier: boolean;
+}>> {
+    const res = await api.get(`/events/${eventId}/bias-report`);
+    return res.data;
+}
+
+export async function exportCSV(eventId: string): Promise<Blob> {
+    const res = await api.get(`/events/${eventId}/export`, {
+        responseType: "blob",
+    });
+    return res.data;
+}
+
+// ── Archestra ──
+
+export async function archestraAssignJudges(eventId: string): Promise<any> {
+    const res = await api.post(`/archestra/assign-judges/${eventId}`);
+    return res.data;
+}
+
+export async function archestraGetProgress(eventId: string): Promise<any> {
+    const res = await api.get(`/archestra/progress/${eventId}`);
+    return res.data;
+}
+
+export async function archestraAggregateScores(eventId: string): Promise<any> {
+    const res = await api.post(`/archestra/aggregate/${eventId}`);
+    return res.data;
+}
+
+export async function archestraGenerateFeedback(submissionId: string): Promise<any> {
+    const res = await api.post(`/archestra/feedback/${submissionId}`);
+    return res.data;
+}
