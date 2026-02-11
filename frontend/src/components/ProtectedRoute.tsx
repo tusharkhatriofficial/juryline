@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Center, Spinner } from "@chakra-ui/react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -13,16 +13,19 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
     const { user, loading, role } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         if (!loading && !user) {
-            router.push("/login");
+            const returnTo = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+            router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
         }
 
         if (!loading && user && allowedRoles && role && !allowedRoles.includes(role)) {
             router.push("/dashboard");
         }
-    }, [user, loading, role, allowedRoles, router]);
+    }, [user, loading, role, allowedRoles, router, pathname, searchParams]);
 
     if (loading) {
         return (

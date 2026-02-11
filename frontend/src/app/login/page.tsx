@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     Box,
     Container,
@@ -37,8 +37,10 @@ export default function LoginPage() {
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const router = useRouter();
+    const searchParams = useSearchParams();
     const toast = useToast();
     const supabase = createClient();
+    const returnTo = searchParams.get("returnTo");
 
     const validate = () => {
         const errs: Record<string, string> = {};
@@ -87,7 +89,7 @@ export default function LoginPage() {
                 participant: "/dashboard",
             };
 
-            router.push(redirectMap[role || ""] || "/dashboard");
+            router.push(returnTo || redirectMap[role || ""] || "/dashboard");
         } catch {
             toast({
                 title: "Something went wrong",
@@ -198,7 +200,7 @@ export default function LoginPage() {
 
                         <Text color="whiteAlpha.500" fontSize="sm">
                             Don't have an account?{" "}
-                            <Link color="brand.300" href="/register">
+                            <Link color="brand.300" href={returnTo ? `/register?returnTo=${encodeURIComponent(returnTo)}` : "/register"}>
                                 Sign up
                             </Link>
                         </Text>
