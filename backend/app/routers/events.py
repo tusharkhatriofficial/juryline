@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.supabase_client import supabase
 from app.utils.dependencies import get_current_user, require_organizer
 from app.models.event import EventCreate, EventUpdate, EventStatusUpdate
+from app.services.archestra_service import archestra_service
+from app.services.submission_service import submission_service
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -164,4 +166,73 @@ async def transition_status(
             )
 
     supabase.table("events").update({"status": new_status}).eq("id", event_id).execute()
-    return {"status": new_status, "message": f"Event transitioned to '{new_status}'"}
+
+    # Auto-assign judges when transitioning to "judging"
+    assignment_info = None
+    if new_status == "judging":
+        try:
+            # Get judges
+            ej_result = (
+                supabase.table("event_judges")
+                .select("judge_id, profiles:judge_id(id, name)")
+                .eq("event_id", event_id)
+                .execute()
+            )
+            judges = [
+                {"id": ej["judge_id"], "name": (ej.get("profiles") or {}).get("name", ""), "current_load": 0}
+                for ej in (ej_result.data or [])
+            ]
+
+            # Get submissions
+            subs_result = (
+                supabase.table("submissions")
+                .select("id, form_data")
+                .eq("event_id", event_id)
+                .execute()
+            )
+            submissions = subs_result.data or []
+
+            # Get form fields for project name
+            form_fields = (
+                supabase.table("form_fields")
+                .select("*")
+                .eq("event_id", event_id)
+                .order("sort_order")
+                .execute()
+            ).data or []
+
+            for sub in submissions:
+                display = submission_service.enrich_for_display(sub.get("form_data", {}), form_fields)
+                sub["project_name"] = next(
+                    (d["value"] for d in display if d["field_type"] == "short_text" and d["value"]),
+                    f"Submission {sub['id'][:8]}",
+                )
+
+            if judges and submissions:
+                result = await archestra_service.assign_judges(
+                    judges=judges,
+                    submissions=submissions,
+                    judges_per_submission=event.data.get("judges_per_submission", 2),
+                )
+
+                # Clear old and insert new
+                supabase.table("judge_assignments").delete().eq("event_id", event_id).execute()
+                new_assigns = [
+                    {"event_id": event_id, "judge_id": a["judge_id"], "submission_id": a["submission_id"], "status": "pending"}
+                    for a in result.get("assignments", [])
+                ]
+                if new_assigns:
+                    supabase.table("judge_assignments").insert(new_assigns).execute()
+
+                assignment_info = {
+                    "assignments_created": len(new_assigns),
+                    "strategy": result.get("strategy", "unknown"),
+                }
+        except Exception as e:
+            # Don't block the transition if assignment fails
+            assignment_info = {"error": str(e)}
+
+    response = {"status": new_status, "message": f"Event transitioned to '{new_status}'"}
+    if assignment_info:
+        response["judge_assignments"] = assignment_info
+    return response

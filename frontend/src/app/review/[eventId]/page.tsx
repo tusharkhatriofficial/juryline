@@ -27,7 +27,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getJudgeQueue, createReview, updateReview, listCriteria } from "@/lib/api-services";
 import type { SubmissionWithReview, Criterion, FormDataDisplayItem } from "@/lib/types";
 import ReviewCard from "@/components/judge/ReviewCard";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 const MotionBox = motion.create(Box);
 
@@ -42,26 +42,6 @@ const slideVariants = {
         opacity: 0,
     }),
 };
-
-// -- Progress Dots --
-function ProgressDots({
-    total,
-    completed,
-    currentIndex,
-}: {
-    total: number;
-    completed: number;
-    currentIndex: number;
-}) {
-    return (
-        <HStack spacing={1} flexWrap="wrap" justify="center">
-            {Array.from({ length: total }).map((_, i) => {
-                const isCompleted = i < total && false; // will be overridden per-item
-                return null; // placeholder, actual rendering below
-            })}
-        </HStack>
-    );
-}
 
 export default function ReviewPage() {
     const params = useParams();
@@ -220,10 +200,8 @@ export default function ReviewPage() {
             const notes = notesMap[subId] || "";
 
             if (currentItem.review) {
-                // Update existing
                 await updateReview(currentItem.review.id, { scores, notes });
             } else {
-                // Create new
                 await createReview({
                     submission_id: subId,
                     scores,
@@ -251,7 +229,7 @@ export default function ReviewPage() {
                 isClosable: true,
             });
 
-            // Go to next or show completion
+            // Go to next or stay
             if (currentIndex < queue.length - 1) {
                 setDirection(1);
                 setCurrentIndex((i) => i + 1);
@@ -338,7 +316,6 @@ export default function ReviewPage() {
 
     // ── Completion Screen ──
     if (allCompleted && currentIndex === queue.length - 1) {
-        // Calculate average score
         let totalScore = 0;
         let scoreCount = 0;
         for (const item of queue) {

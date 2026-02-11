@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     # ── Archestra (Phase 06) ──
     archestra_api_key: str = ""
     archestra_base_url: str = ""
+    archestra_ingest_prompt_id: str = ""
+    archestra_assign_prompt_id: str = ""
+    archestra_progress_prompt_id: str = ""
+    archestra_aggregate_prompt_id: str = ""
+    archestra_feedback_prompt_id: str = ""
 
     @property
     def is_production(self) -> bool:
