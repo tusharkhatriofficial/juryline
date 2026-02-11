@@ -1,5 +1,5 @@
 import api from "@/lib/api";
-import type { Event, FormField, Criterion, EventJudge, Submission } from "@/lib/types";
+import type { Event, FormField, Criterion, EventJudge, Submission, Review, JudgeQueue } from "@/lib/types";
 
 // ── Events ──
 
@@ -265,4 +265,38 @@ export async function updateSubmission(
 
 export async function deleteSubmission(submissionId: string): Promise<void> {
     await api.delete(`/submissions/${submissionId}`);
+}
+
+// ── Reviews ──
+
+export async function getJudgeQueue(eventId: string): Promise<JudgeQueue> {
+    const res = await api.get(`/judges/queue/${eventId}`);
+    return res.data;
+}
+
+export async function createReview(data: {
+    submission_id: string;
+    scores: Record<string, number>;
+    notes?: string;
+}): Promise<Review> {
+    const res = await api.post("/reviews", data);
+    return res.data;
+}
+
+export async function updateReview(
+    reviewId: string,
+    data: { scores?: Record<string, number>; notes?: string }
+): Promise<Review> {
+    const res = await api.put(`/reviews/${reviewId}`, data);
+    return res.data;
+}
+
+export async function getReview(reviewId: string): Promise<Review> {
+    const res = await api.get(`/reviews/${reviewId}`);
+    return res.data;
+}
+
+export async function listEventReviews(eventId: string): Promise<Review[]> {
+    const res = await api.get(`/events/${eventId}/reviews`);
+    return res.data;
 }

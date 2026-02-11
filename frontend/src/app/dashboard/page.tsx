@@ -342,6 +342,7 @@ function OrganizerDashboard() {
 
 function JudgeDashboard() {
     const { profile } = useAuth();
+    const router = useRouter();
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -401,11 +402,43 @@ function JudgeDashboard() {
                                     borderColor="whiteAlpha.100"
                                     _hover={{ borderColor: "purple.400" }}
                                     cursor="pointer"
+                                    onClick={() => {
+                                        if (event.status === "judging") {
+                                            router.push(`/review/${event.id}`);
+                                        }
+                                    }}
                                 >
-                                    <Heading size="sm" color="white">{event.name}</Heading>
-                                    <Badge colorScheme={STATUS_COLORS[event.status]} mt={2} textTransform="capitalize">
-                                        {event.status}
-                                    </Badge>
+                                    <Flex justify="space-between" align="center">
+                                        <Box>
+                                            <Heading size="sm" color="white">{event.name}</Heading>
+                                            {event.description && (
+                                                <Text color="whiteAlpha.500" fontSize="sm" mt={1} noOfLines={1}>
+                                                    {event.description}
+                                                </Text>
+                                            )}
+                                            <HStack mt={2} spacing={3}>
+                                                <Badge colorScheme={STATUS_COLORS[event.status]} textTransform="capitalize">
+                                                    {event.status}
+                                                </Badge>
+                                                <Text color="whiteAlpha.400" fontSize="xs">
+                                                    {new Date(event.start_at).toLocaleDateString()} - {new Date(event.end_at).toLocaleDateString()}
+                                                </Text>
+                                            </HStack>
+                                        </Box>
+                                        {event.status === "judging" && (
+                                            <Button
+                                                colorScheme="purple"
+                                                size="sm"
+                                                rightIcon={<HiOutlineArrowRight />}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.push(`/review/${event.id}`);
+                                                }}
+                                            >
+                                                Start Reviewing
+                                            </Button>
+                                        )}
+                                    </Flex>
                                 </MotionBox>
                             ))}
                         </VStack>
