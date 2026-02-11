@@ -27,9 +27,13 @@ import {
     AlertDialogContent,
     AlertDialogOverlay,
     useDisclosure,
+    Input,
+    InputGroup,
+    InputRightElement,
+    Tooltip,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { HiOutlineArrowLeft } from "react-icons/hi2";
+import { HiOutlineArrowLeft, HiOutlineClipboard, HiOutlineCheck, HiOutlineLink } from "react-icons/hi2";
 import { useRouter, useParams } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -80,8 +84,20 @@ function EventDetailContent() {
     const [judges, setJudges] = useState<EventJudge[]>([]);
     const [loading, setLoading] = useState(true);
     const [transitioning, setTransitioning] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
 
     const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const submissionLink = typeof window !== "undefined"
+        ? `${window.location.origin}/submit/${eventId}`
+        : `/submit/${eventId}`;
+
+    const copyLink = () => {
+        navigator.clipboard.writeText(submissionLink);
+        setLinkCopied(true);
+        toast({ title: "Submission link copied!", status: "success", duration: 2000 });
+        setTimeout(() => setLinkCopied(false), 2000);
+    };
     const cancelRef = { current: null as any };
 
     const loadAll = useCallback(async () => {
@@ -193,17 +209,78 @@ function EventDetailContent() {
                                     </Text>
                                 )}
                             </Box>
-                            {nextStatus && (
-                                <Button
-                                    colorScheme={isDraft ? "green" : "brand"}
-                                    onClick={onOpen}
-                                    isLoading={transitioning}
-                                >
-                                    {STATUS_ACTION_LABEL[event.status]}
-                                </Button>
-                            )}
+                            <HStack spacing={3}>
+                                {!isDraft && (
+                                    <Tooltip label="Copy submission form link to share with participants">
+                                        <Button
+                                            leftIcon={linkCopied ? <HiOutlineCheck /> : <HiOutlineLink />}
+                                            colorScheme={linkCopied ? "green" : "gray"}
+                                            variant="outline"
+                                            onClick={copyLink}
+                                            size="md"
+                                        >
+                                            {linkCopied ? "Copied!" : "Copy Form Link"}
+                                        </Button>
+                                    </Tooltip>
+                                )}
+                                {nextStatus && (
+                                    <Button
+                                        colorScheme={isDraft ? "green" : "brand"}
+                                        onClick={onOpen}
+                                        isLoading={transitioning}
+                                    >
+                                        {STATUS_ACTION_LABEL[event.status]}
+                                    </Button>
+                                )}
+                            </HStack>
                         </Flex>
                     </MotionBox>
+
+                    {/* Shareable Submission Link Bar */}
+                    {!isDraft && (
+                        <MotionBox
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1, duration: 0.3 }}
+                            p={4}
+                            borderRadius="xl"
+                            bg="whiteAlpha.50"
+                            border="1px solid"
+                            borderColor="whiteAlpha.100"
+                        >
+                            <HStack spacing={3}>
+                                <HiOutlineLink color="var(--chakra-colors-purple-300)" />
+                                <Text color="gray.400" fontSize="sm" fontWeight="medium" whiteSpace="nowrap">
+                                    Submission Link:
+                                </Text>
+                                <InputGroup size="sm">
+                                    <Input
+                                        value={submissionLink}
+                                        isReadOnly
+                                        bg="whiteAlpha.50"
+                                        border="1px solid"
+                                        borderColor="whiteAlpha.200"
+                                        color="purple.200"
+                                        borderRadius="md"
+                                        fontSize="sm"
+                                        _focus={{ borderColor: "purple.400" }}
+                                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                                    />
+                                    <InputRightElement>
+                                        <IconButton
+                                            aria-label="Copy link"
+                                            icon={linkCopied ? <HiOutlineCheck /> : <HiOutlineClipboard />}
+                                            size="xs"
+                                            variant="ghost"
+                                            color={linkCopied ? "green.300" : "gray.400"}
+                                            onClick={copyLink}
+                                            _hover={{ color: "purple.300" }}
+                                        />
+                                    </InputRightElement>
+                                </InputGroup>
+                            </HStack>
+                        </MotionBox>
+                    )}
 
                     {/* Tabs */}
                     <MotionBox
