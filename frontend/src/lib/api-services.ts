@@ -165,7 +165,7 @@ export async function listJudges(eventId: string): Promise<EventJudge[]> {
 export async function inviteJudge(
     eventId: string,
     data: { email: string; name: string }
-): Promise<{ message: string; invite_link?: string; judge_id?: string }> {
+): Promise<{ message: string; invite_link?: string; judge_id?: string; email_sent?: boolean }> {
     const res = await api.post(`/events/${eventId}/judges/invite`, data);
     return res.data;
 }
@@ -175,6 +175,20 @@ export async function removeJudge(
     judgeRecordId: string
 ): Promise<void> {
     await api.delete(`/events/${eventId}/judges/${judgeRecordId}`);
+}
+
+export async function getInviteInfo(eventId: string): Promise<{
+    event: { id: string; name: string; description?: string; status: string };
+    organizer: { name: string; email: string } | null;
+    invite: { id: string; invite_status: string; invited_at: string } | null;
+}> {
+    const res = await api.get(`/events/${eventId}/judges/invite-info`);
+    return res.data;
+}
+
+export async function acceptInvite(eventId: string): Promise<{ message: string }> {
+    const res = await api.patch(`/events/${eventId}/judges/accept`);
+    return res.data;
 }
 
 // ── Uploads (R2 Presigned) ──

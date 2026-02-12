@@ -545,45 +545,155 @@ export function FormBuilderTab({ eventId, fields, setFields, isDraft }: FormBuil
                                         </VStack>
                                     ) : (
                                         /* View mode */
-                                        <Flex justify="space-between" align="center">
-                                            <HStack spacing={3} flex={1}>
+                                        <Flex justify="space-between" align="start">
+                                            <HStack spacing={3} flex={1} align="start">
                                                 {isDraft && (
-                                                    <Box color="whiteAlpha.300" cursor="grab" _active={{ cursor: "grabbing" }}>
+                                                    <Box color="whiteAlpha.300" cursor="grab" _active={{ cursor: "grabbing" }} mt={1}>
                                                         <HiOutlineBars3 size={16} />
                                                     </Box>
                                                 )}
-                                                <Box>
-                                                    <HStack spacing={2}>
-                                                        <Text color="white" fontWeight="500" fontSize="sm">
+                                                <Box flex={1}>
+                                                    <HStack spacing={2} mb={1}>
+                                                        <Text color="white" fontWeight="600" fontSize="sm">
                                                             {field.label}
                                                         </Text>
                                                         {field.is_required && (
-                                                            <Text color="red.300" fontSize="xs">*</Text>
+                                                            <Text color="red.300" fontWeight="700">*</Text>
                                                         )}
-                                                    </HStack>
-                                                    <HStack spacing={2} mt={0.5}>
                                                         <Badge
-                                                            colorScheme="whiteAlpha"
-                                                            fontSize="xs"
-                                                            variant="outline"
+                                                            colorScheme="brand"
+                                                            fontSize="2xs"
+                                                            variant="subtle"
+                                                            px={1.5}
+                                                            borderRadius="md"
                                                         >
                                                             {FIELD_TYPE_LABELS[field.field_type] || field.field_type}
                                                         </Badge>
-                                                        {field.description && (
-                                                            <Text color="whiteAlpha.400" fontSize="xs" noOfLines={1}>
-                                                                {field.description}
-                                                            </Text>
-                                                        )}
                                                     </HStack>
-                                                    {needsOptions(field.field_type) && Array.isArray(field.options) && (
-                                                        <HStack mt={1} flexWrap="wrap" gap={1}>
-                                                            {(field.options as string[]).map((opt, i) => (
-                                                                <Tag key={i} size="sm" variant="subtle" colorScheme="gray">
-                                                                    <TagLabel>{opt}</TagLabel>
-                                                                </Tag>
-                                                            ))}
-                                                        </HStack>
-                                                    )}
+
+                                                    {/* Field type preview */}
+                                                    {(() => {
+                                                        const placeholder = field.description || field.label;
+                                                        switch (field.field_type) {
+                                                            case "long_text":
+                                                                return (
+                                                                    <Box
+                                                                        w="full"
+                                                                        h="60px"
+                                                                        px={3}
+                                                                        py={2}
+                                                                        mt={1}
+                                                                        borderRadius="lg"
+                                                                        bg="whiteAlpha.30"
+                                                                        border="1px solid"
+                                                                        borderColor="whiteAlpha.100"
+                                                                    >
+                                                                        <Text color="whiteAlpha.300" fontSize="sm">{placeholder}</Text>
+                                                                    </Box>
+                                                                );
+                                                            case "dropdown":
+                                                                return (
+                                                                    <Box
+                                                                        w="full"
+                                                                        h="36px"
+                                                                        px={3}
+                                                                        mt={1}
+                                                                        borderRadius="lg"
+                                                                        bg="whiteAlpha.30"
+                                                                        border="1px solid"
+                                                                        borderColor="whiteAlpha.100"
+                                                                        display="flex"
+                                                                        alignItems="center"
+                                                                        justifyContent="space-between"
+                                                                    >
+                                                                        <Text color="whiteAlpha.300" fontSize="sm">
+                                                                            {Array.isArray(field.options) && (field.options as string[]).length > 0
+                                                                                ? `${(field.options as string[])[0]} +${(field.options as string[]).length - 1} more`
+                                                                                : "Select..."}
+                                                                        </Text>
+                                                                        <HiOutlineChevronDown size={14} color="rgba(255,255,255,0.3)" />
+                                                                    </Box>
+                                                                );
+                                                            case "multiple_choice":
+                                                            case "checkboxes":
+                                                                return (
+                                                                    <VStack spacing={1.5} mt={1} align="start">
+                                                                        {Array.isArray(field.options) && (field.options as string[]).slice(0, 3).map((opt, i) => (
+                                                                            <HStack key={i} spacing={2}>
+                                                                                <Box
+                                                                                    w={3.5}
+                                                                                    h={3.5}
+                                                                                    borderRadius={field.field_type === "multiple_choice" ? "full" : "sm"}
+                                                                                    border="1.5px solid"
+                                                                                    borderColor="whiteAlpha.300"
+                                                                                />
+                                                                                <Text color="whiteAlpha.500" fontSize="sm">{opt}</Text>
+                                                                            </HStack>
+                                                                        ))}
+                                                                        {Array.isArray(field.options) && (field.options as string[]).length > 3 && (
+                                                                            <Text color="whiteAlpha.300" fontSize="xs">
+                                                                                +{(field.options as string[]).length - 3} more
+                                                                            </Text>
+                                                                        )}
+                                                                    </VStack>
+                                                                );
+                                                            case "file_upload":
+                                                                return (
+                                                                    <Box
+                                                                        w="full"
+                                                                        h="36px"
+                                                                        px={3}
+                                                                        mt={1}
+                                                                        borderRadius="lg"
+                                                                        bg="whiteAlpha.30"
+                                                                        border="1px dashed"
+                                                                        borderColor="whiteAlpha.200"
+                                                                        display="flex"
+                                                                        alignItems="center"
+                                                                        gap={2}
+                                                                    >
+                                                                        <Text color="whiteAlpha.300" fontSize="sm">Click or drag to upload file</Text>
+                                                                    </Box>
+                                                                );
+                                                            case "linear_scale":
+                                                                return (
+                                                                    <HStack spacing={2} mt={1}>
+                                                                        {[1, 2, 3, 4, 5].map((n) => (
+                                                                            <Box
+                                                                                key={n}
+                                                                                w={7}
+                                                                                h={7}
+                                                                                borderRadius="md"
+                                                                                border="1.5px solid"
+                                                                                borderColor="whiteAlpha.200"
+                                                                                display="flex"
+                                                                                alignItems="center"
+                                                                                justifyContent="center"
+                                                                            >
+                                                                                <Text color="whiteAlpha.400" fontSize="xs">{n}</Text>
+                                                                            </Box>
+                                                                        ))}
+                                                                    </HStack>
+                                                                );
+                                                            default: // short_text, url, email, number, date
+                                                                return (
+                                                                    <Box
+                                                                        w="full"
+                                                                        h="36px"
+                                                                        px={3}
+                                                                        mt={1}
+                                                                        borderRadius="lg"
+                                                                        bg="whiteAlpha.30"
+                                                                        border="1px solid"
+                                                                        borderColor="whiteAlpha.100"
+                                                                        display="flex"
+                                                                        alignItems="center"
+                                                                    >
+                                                                        <Text color="whiteAlpha.300" fontSize="sm">{placeholder}</Text>
+                                                                    </Box>
+                                                                );
+                                                        }
+                                                    })()}
                                                 </Box>
                                             </HStack>
                                             {isDraft && (

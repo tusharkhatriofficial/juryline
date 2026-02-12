@@ -113,7 +113,7 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
             await archestraAggregateScores(eventId);
             await loadDashboard();
             toast({
-                title: "Scores aggregated ✨",
+                title: "Scores aggregated",
                 description: "Leaderboard refreshed via Archestra",
                 status: "success",
                 duration: 2000,
@@ -530,8 +530,8 @@ function LeaderboardRow({
     onToggle: () => void;
     delay: number;
 }) {
-    const medals = ["🥇", "🥈", "🥉"];
-    const medal = entry.rank <= 3 ? medals[entry.rank - 1] : null;
+    const medalColors = ["yellow.400", "gray.300", "orange.300"];
+    const medalColor = entry.rank <= 3 ? medalColors[entry.rank - 1] : null;
 
     return (
         <>
@@ -545,9 +545,9 @@ function LeaderboardRow({
                 onClick={onToggle}
             >
                 <Td color="white" fontWeight="bold">
-                    {medal ? (
+                    {medalColor ? (
                         <HStack spacing={2}>
-                            <Text fontSize="lg">{medal}</Text>
+                            <Icon as={HiOutlineTrophy} boxSize={5} color={medalColor} />
                             <Text>{entry.rank}</Text>
                         </HStack>
                     ) : (

@@ -70,6 +70,7 @@ const components = {
     variants: {
       solid: (props: StyleFunctionProps) => ({
         bg: props.colorScheme === "brand" ? "brand.500" : undefined,
+        color: props.colorScheme === "brand" ? "white" : undefined,
         _hover: {
           bg: props.colorScheme === "brand" ? "brand.600" : undefined,
           transform: "translateY(-1px)",

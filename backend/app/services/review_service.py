@@ -3,9 +3,38 @@ Juryline -- Review Service
 Judge queue building, score validation, and review upsert logic.
 """
 
+import json
 from fastapi import HTTPException
 from app.supabase_client import supabase
-from app.services.submission_service import submission_service
+
+
+def _ensure_dict(value) -> dict:
+    """Safely coerce a value to a dict. Handles JSON strings from JSONB columns."""
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, dict):
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return {}
+
+
+def _enrich_form_data(form_data, form_fields: list) -> list[dict]:
+    """Build display list from form_data and field definitions."""
+    raw = _ensure_dict(form_data)
+    display = []
+    for field in form_fields:
+        value = raw.get(field["id"]) or raw.get(field["label"])
+        display.append({
+            "field_id": field["id"],
+            "label": field["label"],
+            "field_type": field["field_type"],
+            "value": value,
+        })
+    return display
 
 
 class ReviewService:
@@ -71,6 +100,8 @@ class ReviewService:
         )
         reviews_map: dict[str, dict] = {}
         for r in (rev_result.data or []):
+            # Ensure scores is always a dict (JSONB may return as string)
+            r["scores"] = _ensure_dict(r.get("scores", {}))
             reviews_map[r["submission_id"]] = r
 
         # 5. Build queue items
@@ -92,8 +123,8 @@ class ReviewService:
                 found_uncompleted = True
 
             # Enrich form_data with labels for display
-            enriched = submission_service.enrich_for_display(
-                sub["form_data"] or {}, form_fields
+            enriched = _enrich_form_data(
+                sub.get("form_data") or {}, form_fields
             )
 
             items.append({

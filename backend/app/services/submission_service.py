@@ -135,14 +135,25 @@ class SubmissionService:
             .execute()
         )
 
+        # form_data may be a JSON string (from DB) or already a dict
+        raw = submission.get("form_data", {})
+        if isinstance(raw, str):
+            import json
+            try:
+                raw = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                raw = {}
+
         display = []
         for field in fields_result.data or []:
+            # Try lookup by field ID first, then fall back to label
+            value = raw.get(field["id"]) or raw.get(field["label"])
             display.append(
                 {
                     "field_id": field["id"],
                     "label": field["label"],
                     "field_type": field["field_type"],
-                    "value": submission.get("form_data", {}).get(field["id"]),
+                    "value": value,
                 }
             )
 

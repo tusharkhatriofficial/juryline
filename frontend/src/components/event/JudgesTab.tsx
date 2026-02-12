@@ -75,7 +75,22 @@ export function JudgesTab({ eventId, judges, setJudges }: JudgesTabProps) {
 
             setInviteEmail("");
             setInviteName("");
-            toast({ title: result.message, status: "success", duration: 2000 });
+
+            if (result.email_sent) {
+                toast({
+                    title: "Invitation sent!",
+                    description: "A magic link email has been sent to the judge.",
+                    status: "success",
+                    duration: 4000,
+                });
+            } else {
+                toast({
+                    title: result.message,
+                    description: "Copy the invite link below and share it manually.",
+                    status: "info",
+                    duration: 4000,
+                });
+            }
         } catch (err: any) {
             toast({
                 title: "Failed to invite judge",
@@ -165,14 +180,17 @@ export function JudgesTab({ eventId, judges, setJudges }: JudgesTabProps) {
 
                         {lastInviteLink && (
                             <Box
-                                p={3}
+                                p={4}
                                 borderRadius="xl"
                                 bg="green.900"
                                 border="1px solid"
                                 borderColor="green.600"
                             >
-                                <Text color="green.200" fontSize="sm" mb={2}>
-                                    Invite link generated. Share this with the judge:
+                                <Text color="green.200" fontSize="sm" fontWeight="600" mb={1}>
+                                    Invite link ready!
+                                </Text>
+                                <Text color="green.300" fontSize="xs" mb={3}>
+                                    Share this link with the judge. When they click it, they will be signed in automatically and see the invitation.
                                 </Text>
                                 <HStack>
                                     <Input
@@ -190,6 +208,11 @@ export function JudgesTab({ eventId, judges, setJudges }: JudgesTabProps) {
                                         onClick={onCopy}
                                     />
                                 </HStack>
+                                {hasCopied && (
+                                    <Text color="green.400" fontSize="xs" mt={2}>
+                                        Link copied! Send it to the judge via email, Slack, or any messenger.
+                                    </Text>
+                                )}
                             </Box>
                         )}
 

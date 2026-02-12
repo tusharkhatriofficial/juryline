@@ -24,6 +24,7 @@ import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/hooks/useAuth";
 import { FieldRenderer } from "@/components/submission/FieldRenderer";
+import { SubmissionAuthGate } from "@/components/submission/SubmissionAuthGate";
 import {
     getEvent,
     listFormFields,
@@ -345,7 +346,7 @@ function SubmissionFormContent() {
 
 export default function SubmitPage() {
     return (
-        <ProtectedRoute allowedRoles={["participant"]}>
+        <ProtectedRoute allowedRoles={["participant"]} fallback={<SubmissionAuthGate />}>
             <Box minH="100vh" bg="gray.900">
                 <Navbar />
                 <SubmissionFormContent />

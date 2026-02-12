@@ -18,11 +18,12 @@ import {
     Kbd,
 } from "@chakra-ui/react";
 import {
-    ArrowBackIcon,
-    ArrowForwardIcon,
-    CheckIcon,
-    CloseIcon,
-} from "@chakra-ui/icons";
+    HiOutlineInboxStack,
+    HiOutlineArrowLeft,
+    HiOutlineArrowRight,
+    HiOutlineCheck,
+    HiOutlineXMark,
+} from "react-icons/hi2";
 import { motion, AnimatePresence } from "framer-motion";
 import { getJudgeQueue, createReview, updateReview, listCriteria } from "@/lib/api-services";
 import type { SubmissionWithReview, Criterion, FormDataDisplayItem } from "@/lib/types";
@@ -235,9 +236,18 @@ export default function ReviewPage() {
                 setCurrentIndex((i) => i + 1);
             }
         } catch (err: any) {
+            const detail = err?.response?.data?.detail;
+            let description = err.message;
+            if (typeof detail === "string") {
+                description = detail;
+            } else if (Array.isArray(detail)) {
+                description = detail.map((d: any) => d.msg || JSON.stringify(d)).join("; ");
+            } else if (detail && typeof detail === "object") {
+                description = detail.msg || JSON.stringify(detail);
+            }
             toast({
                 title: "Failed to save review",
-                description: err?.response?.data?.detail || err.message,
+                description,
                 status: "error",
                 duration: 5000,
             });
@@ -295,7 +305,9 @@ export default function ReviewPage() {
         return (
             <Center h="100vh" bg="gray.900">
                 <VStack spacing={4}>
-                    <Text fontSize="6xl">📭</Text>
+                    <Flex w={20} h={20} borderRadius="2xl" bg="whiteAlpha.50" border="1px solid" borderColor="whiteAlpha.100" align="center" justify="center">
+                        <HiOutlineInboxStack size={36} color="var(--chakra-colors-whiteAlpha-500)" />
+                    </Flex>
                     <Text color="white" fontSize="xl" fontWeight="bold">
                         No submissions assigned
                     </Text>
@@ -338,7 +350,9 @@ export default function ReviewPage() {
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", stiffness: 200, damping: 15 }}
                     >
-                        <Text fontSize="6xl">🎉</Text>
+                        <Flex w={20} h={20} borderRadius="full" bg="brand.500" align="center" justify="center">
+                            <HiOutlineCheck size={40} color="white" />
+                        </Flex>
                     </motion.div>
                     <Text color="white" fontSize="2xl" fontWeight="bold">
                         You&apos;ve reviewed all {queue.length} submissions!
@@ -397,7 +411,7 @@ export default function ReviewPage() {
                     top={0}
                     zIndex={10}
                 >
-                    <Flex align="center" justify="space-between" maxW="900px" mx="auto">
+                    <Flex align="center" justify="space-between" maxW="1300px" mx="auto">
                         {/* Progress Dots */}
                         <HStack spacing={1.5} flexWrap="wrap">
                             {queue.map((item, i) => {
@@ -446,7 +460,7 @@ export default function ReviewPage() {
                             </Text>
                             <IconButton
                                 aria-label="Exit review"
-                                icon={<CloseIcon />}
+                                icon={<HiOutlineXMark />}
                                 variant="ghost"
                                 color="gray.400"
                                 size="sm"
@@ -458,7 +472,7 @@ export default function ReviewPage() {
                 </Box>
 
                 {/* Card Area */}
-                <Container maxW="900px" py={8}>
+                <Container maxW="1300px" py={8}>
                     <AnimatePresence custom={direction} mode="wait">
                         <MotionBox
                             key={currentIndex}
@@ -488,7 +502,7 @@ export default function ReviewPage() {
                         px={2}
                     >
                         <Button
-                            leftIcon={<ArrowBackIcon />}
+                            leftIcon={<HiOutlineArrowLeft />}
                             variant="outline"
                             colorScheme="purple"
                             onClick={goToPrevious}
@@ -513,9 +527,9 @@ export default function ReviewPage() {
                         <Button
                             rightIcon={
                                 completedSet.has(currentSubId) ? (
-                                    <CheckIcon />
+                                    <HiOutlineCheck />
                                 ) : (
-                                    <ArrowForwardIcon />
+                                    <HiOutlineArrowRight />
                                 )
                             }
                             colorScheme="purple"

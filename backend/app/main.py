@@ -32,14 +32,22 @@ app = FastAPI(
 
 # ── CORS ──
 settings = get_settings()
+
+# Build origins list from env variable + defaults
+_default_origins = [
+    settings.frontend_url,
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:4000",
+]
+_extra_origins = [
+    o.strip() for o in settings.cors_origins.split(",") if o.strip()
+] if settings.cors_origins else []
+_all_origins = list(dict.fromkeys(_default_origins + _extra_origins))  # dedupe, preserve order
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        settings.frontend_url,
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:4000",
-    ],
+    allow_origins=_all_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

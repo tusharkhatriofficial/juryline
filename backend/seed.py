@@ -236,8 +236,10 @@ def seed():
     print("\n📝 Creating form fields...")
     for field in DEMO_FORM_FIELDS:
         field["event_id"] = event_id
-    supabase.table("form_fields").insert(DEMO_FORM_FIELDS).execute()
-    print(f"  ✅ {len(DEMO_FORM_FIELDS)} form fields created")
+    ff_resp = supabase.table("form_fields").insert(DEMO_FORM_FIELDS).execute()
+    # Build a label→id mapping so submissions use UUIDs as keys
+    field_id_map = {f["label"]: f["id"] for f in ff_resp.data}
+    print(f"  ✅ {len(ff_resp.data)} form fields created")
 
     # ── 5. Create Criteria ──
     print("\n⚖️ Creating criteria...")
@@ -259,11 +261,11 @@ def seed():
     submission_ids = []
     for i, (sub_data, pid) in enumerate(zip(DEMO_SUBMISSIONS[:3], [p1_id, p2_id, p3_id])):
         form_data = {
-            "Project Name": sub_data["project_name"],
-            "Team Name": sub_data["team_name"],
-            "Project Description": sub_data["description"],
-            "Demo URL": sub_data["demo_url"],
-            "Repository URL": sub_data["repo_url"],
+            field_id_map["Project Name"]: sub_data["project_name"],
+            field_id_map["Team Name"]: sub_data["team_name"],
+            field_id_map["Project Description"]: sub_data["description"],
+            field_id_map["Demo URL"]: sub_data["demo_url"],
+            field_id_map["Repository URL"]: sub_data["repo_url"],
         }
         sub_resp = supabase.table("submissions").insert({
             "event_id": event_id,
@@ -288,11 +290,11 @@ def seed():
         except:
             pass
         form_data = {
-            "Project Name": sub_data["project_name"],
-            "Team Name": sub_data["team_name"],
-            "Project Description": sub_data["description"],
-            "Demo URL": sub_data["demo_url"],
-            "Repository URL": sub_data["repo_url"],
+            field_id_map["Project Name"]: sub_data["project_name"],
+            field_id_map["Team Name"]: sub_data["team_name"],
+            field_id_map["Project Description"]: sub_data["description"],
+            field_id_map["Demo URL"]: sub_data["demo_url"],
+            field_id_map["Repository URL"]: sub_data["repo_url"],
         }
         sub_resp = supabase.table("submissions").insert({
             "event_id": event_id,

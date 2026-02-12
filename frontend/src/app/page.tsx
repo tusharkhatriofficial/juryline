@@ -15,7 +15,7 @@ import {
   Flex,
   Center,
 } from "@chakra-ui/react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
   HiOutlineSparkles,
   HiOutlineClipboardDocumentList,
@@ -29,6 +29,11 @@ import {
   HiOutlineShieldCheck,
   HiOutlineBolt,
   HiOutlineArrowRight,
+  HiOutlineSquares2X2,
+  HiOutlineCloudArrowUp,
+  HiOutlineCodeBracket,
+  HiOutlineArrowTrendingUp,
+  HiOutlineServerStack,
 } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
@@ -85,7 +90,7 @@ const STEPS = [
   { icon: HiOutlineDocumentPlus, label: "Create Event", desc: "Set up your hackathon with custom criteria & weights" },
   { icon: HiOutlineInboxArrowDown, label: "Collect Submissions", desc: "Dynamic forms with 11 field types + file uploads" },
   { icon: HiOutlineCpuChip, label: "AI Assigns Judges", desc: "Archestra.ai distributes submissions fairly" },
-  { icon: HiOutlineHandThumbUp, label: "Card-Based Review", desc: "Judges rate with sliders — keyboard shortcuts included" },
+  { icon: HiOutlineHandThumbUp, label: "Card-Based Review", desc: "Judges rate with sliders and keyboard shortcuts" },
   { icon: HiOutlineTrophy, label: "Instant Leaderboard", desc: "Live scores, bias reports, and CSV export" },
 ];
 
@@ -99,7 +104,7 @@ const FEATURES = [
   {
     icon: HiOutlineClipboardDocumentList,
     title: "Card-Based Reviews",
-    desc: "Judges swipe through submissions with sliders and keyboard shortcuts. ← → to navigate, Ctrl+Enter to submit.",
+    desc: "Judges swipe through submissions with sliders and keyboard shortcuts. Navigate and submit efficiently.",
   },
   {
     icon: HiOutlineUserGroup,
@@ -121,6 +126,217 @@ const FEATURES = [
     title: "AI-Powered Orchestration",
     desc: "Archestra.ai handles judge assignment, score aggregation, and feedback generation via A2A protocol.",
   },
+];
+
+/* ── Rotating Flow Steps for Hero ── */
+const FLOW_STEPS = [
+  {
+    icon: HiOutlineDocumentPlus,
+    title: "Create Event",
+    subtitle: "Set criteria & weights",
+    color: "brand.400",
+    bgColor: "brand.500",
+    mockLines: ["Event: AI Hackathon 2025", "Criteria: Innovation (1.5x)", "Judges per submission: 2"],
+  },
+  {
+    icon: HiOutlineSquares2X2,
+    title: "Build Forms",
+    subtitle: "11 field types",
+    color: "accent.400",
+    bgColor: "accent.500",
+    mockLines: ["Project Name [short_text]", "Description  [long_text]", "Demo URL     [url]"],
+  },
+  {
+    icon: HiOutlineInboxArrowDown,
+    title: "Collect Submissions",
+    subtitle: "Dynamic entry forms",
+    color: "blue.400",
+    bgColor: "blue.500",
+    mockLines: ["ByteCooks   \u2192 AI Recipe Gen", "GreenByte   \u2192 EcoTrack", "NeuralNotes \u2192 StudyBuddy AI"],
+  },
+  {
+    icon: HiOutlineCpuChip,
+    title: "AI Assigns Judges",
+    subtitle: "Fair distribution",
+    color: "purple.400",
+    bgColor: "purple.500",
+    mockLines: ["Sam Rivera  \u2192 5 submissions", "Jordan Lee  \u2192 5 submissions", "Balanced distribution: OK"],
+  },
+  {
+    icon: HiOutlineHandThumbUp,
+    title: "Card-Based Review",
+    subtitle: "Slider ratings + notes",
+    color: "orange.400",
+    bgColor: "orange.500",
+    mockLines: ["Innovation:  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591 8/10", "Technical:   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591 7/10", "Submit review \u2192 Ctrl+Enter"],
+  },
+  {
+    icon: HiOutlineTrophy,
+    title: "Instant Leaderboard",
+    subtitle: "Ranked results + export",
+    color: "yellow.400",
+    bgColor: "yellow.500",
+    mockLines: ["#1 ByteCooks     \u2192 8.7 avg", "#2 GreenByte     \u2192 8.2 avg", "#3 NeuralNotes   \u2192 7.5 avg"],
+  },
+];
+
+function RotatingFlowCard() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % FLOW_STEPS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const step = FLOW_STEPS[activeStep];
+
+  return (
+    <Box position="relative" w="full" maxW="420px">
+      {/* Progress dots */}
+      <HStack spacing={2} justify="center" mb={4}>
+        {FLOW_STEPS.map((_, i) => (
+          <Box
+            key={i}
+            w={activeStep === i ? "24px" : "8px"}
+            h="8px"
+            borderRadius="full"
+            bg={activeStep === i ? "brand.400" : "whiteAlpha.200"}
+            transition="all 0.4s ease"
+            cursor="pointer"
+            onClick={() => setActiveStep(i)}
+          />
+        ))}
+      </HStack>
+
+      {/* Card */}
+      <Box
+        borderRadius="2xl"
+        bg="whiteAlpha.50"
+        backdropFilter="blur(20px)"
+        border="1px solid"
+        borderColor="whiteAlpha.100"
+        overflow="hidden"
+        minH="280px"
+      >
+        <AnimatePresence mode="wait">
+          <MotionBox
+            key={activeStep}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            {/* Header bar */}
+            <Flex
+              px={5}
+              py={3}
+              bg="whiteAlpha.50"
+              borderBottom="1px solid"
+              borderColor="whiteAlpha.100"
+              align="center"
+              gap={3}
+            >
+              <Flex
+                w={9}
+                h={9}
+                borderRadius="lg"
+                bg={step.bgColor}
+                align="center"
+                justify="center"
+                flexShrink={0}
+              >
+                <Icon as={step.icon} boxSize={5} color="white" />
+              </Flex>
+              <Box>
+                <Text fontSize="sm" fontWeight="700" color="white">
+                  Step {activeStep + 1}: {step.title}
+                </Text>
+                <Text fontSize="xs" color="whiteAlpha.500">
+                  {step.subtitle}
+                </Text>
+              </Box>
+              <Badge
+                ml="auto"
+                fontSize="9px"
+                px={2}
+                py={0.5}
+                borderRadius="full"
+                bg={step.bgColor}
+                color="white"
+              >
+                {activeStep + 1}/{FLOW_STEPS.length}
+              </Badge>
+            </Flex>
+
+            {/* Mock terminal/content */}
+            <Box px={5} py={4}>
+              <Box
+                bg="gray.900"
+                borderRadius="lg"
+                p={4}
+                border="1px solid"
+                borderColor="whiteAlpha.100"
+                fontFamily="mono"
+              >
+                {/* Terminal header dots */}
+                <HStack spacing={1.5} mb={3}>
+                  <Box w="6px" h="6px" borderRadius="full" bg="red.400" />
+                  <Box w="6px" h="6px" borderRadius="full" bg="yellow.400" />
+                  <Box w="6px" h="6px" borderRadius="full" bg="green.400" />
+                  <Text fontSize="9px" color="whiteAlpha.300" ml={2}>
+                    juryline
+                  </Text>
+                </HStack>
+
+                {step.mockLines.map((line, i) => (
+                  <MotionBox
+                    key={`${activeStep}-${i}`}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.15 + i * 0.15, duration: 0.3 }}
+                  >
+                    <Text
+                      fontSize="xs"
+                      color={i === step.mockLines.length - 1 ? step.color : "whiteAlpha.700"}
+                      lineHeight="2"
+                      fontFamily="mono"
+                      whiteSpace="pre"
+                    >
+                      {line}
+                    </Text>
+                  </MotionBox>
+                ))}
+              </Box>
+
+              {/* Animated progress bar */}
+              <Box mt={3} h="3px" borderRadius="full" bg="whiteAlpha.100" overflow="hidden">
+                <MotionBox
+                  h="full"
+                  bg={step.bgColor}
+                  borderRadius="full"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 3.5, ease: "linear" }}
+                  key={activeStep}
+                />
+              </Box>
+            </Box>
+          </MotionBox>
+        </AnimatePresence>
+      </Box>
+    </Box>
+  );
+}
+
+/* ── Tech stack with icons ── */
+const TECH_STACK = [
+  { name: "Archestra.ai", icon: HiOutlineCpuChip, desc: "AI Orchestration" },
+  { name: "Supabase", icon: HiOutlineServerStack, desc: "Auth & Database" },
+  { name: "Cloudflare R2", icon: HiOutlineCloudArrowUp, desc: "File Storage" },
+  { name: "Next.js", icon: HiOutlineCodeBracket, desc: "Frontend" },
+  { name: "FastAPI", icon: HiOutlineArrowTrendingUp, desc: "Backend" },
 ];
 
 export default function Home() {
@@ -179,119 +395,125 @@ export default function Home() {
         />
       </Box>
 
-      {/* ===== HERO SECTION ===== */}
-      <Container maxW="container.lg" pt={{ base: 16, md: 24 }} pb={20} position="relative" zIndex={1}>
-        <MotionVStack
-          spacing={8}
+      {/* ===== HERO SECTION -- Split Layout ===== */}
+      <Container maxW="container.xl" pt={{ base: 16, md: 20 }} pb={16} position="relative" zIndex={1}>
+        <Flex
+          direction={{ base: "column", lg: "row" }}
           align="center"
-          textAlign="center"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          justify="space-between"
+          gap={{ base: 12, lg: 16 }}
         >
+          {/* Left -- Text Content */}
           <MotionBox
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            flex={1}
+            maxW={{ lg: "540px" }}
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            <Badge
-              fontSize="sm"
-              px={4}
-              py={1.5}
-              borderRadius="full"
-              bg="whiteAlpha.100"
-              color="brand.300"
-              border="1px solid"
-              borderColor="brand.500"
-              backdropFilter="blur(10px)"
-              letterSpacing="wide"
-            >
-              ✨ AI-Powered Hackathon Judging
-            </Badge>
+            <VStack spacing={6} align={{ base: "center", lg: "flex-start" }} textAlign={{ base: "center", lg: "left" }}>
+              <Badge
+                fontSize="sm"
+                px={4}
+                py={1.5}
+                borderRadius="full"
+                bg="whiteAlpha.100"
+                color="brand.300"
+                border="1px solid"
+                borderColor="brand.500"
+                backdropFilter="blur(10px)"
+                letterSpacing="wide"
+              >
+                <HStack spacing={2}>
+                  <Icon as={HiOutlineSparkles} boxSize={3.5} />
+                  <Text as="span">AI-Powered Hackathon Judging</Text>
+                </HStack>
+              </Badge>
+
+              <Heading
+                as="h1"
+                fontSize={{ base: "4xl", md: "5xl", lg: "6xl" }}
+                fontWeight="800"
+                lineHeight="1.05"
+                bgGradient="linear(to-r, white, brand.200)"
+                bgClip="text"
+              >
+                Hackathon Judging,{" "}
+                <Box as="span" bgGradient="linear(to-r, brand.300, accent.300)" bgClip="text">
+                  Reimagined.
+                </Box>
+              </Heading>
+
+              <Text
+                fontSize={{ base: "lg", md: "xl" }}
+                color="whiteAlpha.700"
+                lineHeight="1.7"
+                maxW="500px"
+              >
+                Create custom submission forms, collect entries, assign judges with AI,
+                and get instant leaderboards — all in one beautifully crafted platform.
+              </Text>
+
+              <HStack spacing={4} pt={2}>
+                <Button
+                  size="lg"
+                  colorScheme="brand"
+                  color="white"
+                  px={8}
+                  fontSize="lg"
+                  rightIcon={<HiOutlineArrowRight />}
+                  onClick={() => router.push("/register")}
+                  _hover={{
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 10px 40px rgba(124, 58, 237, 0.4)",
+                  }}
+                  sx={{
+                    position: "relative",
+                    overflow: "hidden",
+                    _after: {
+                      content: '""',
+                      position: "absolute",
+                      top: 0,
+                      left: "-100%",
+                      w: "200%",
+                      h: "100%",
+                      bg: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                      animation: "shimmer 3s infinite",
+                    },
+                    "@keyframes shimmer": {
+                      "0%": { left: "-100%" },
+                      "100%": { left: "100%" },
+                    },
+                  }}
+                >
+                  Create Your Event
+                </Button>
+                <Button
+                  size="lg"
+                  variant="glass"
+                  px={8}
+                  fontSize="lg"
+                  color="whiteAlpha.800"
+                  onClick={() => router.push("/login")}
+                >
+                  Sign In
+                </Button>
+              </HStack>
+            </VStack>
           </MotionBox>
 
-          <MotionHeading
-            as="h1"
-            fontSize={{ base: "4xl", md: "6xl", lg: "7xl" }}
-            fontWeight="800"
-            lineHeight="1.05"
-            bgGradient="linear(to-r, white, brand.200)"
-            bgClip="text"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-          >
-            Hackathon Judging,
-            <br />
-            <Box as="span" bgGradient="linear(to-r, brand.300, accent.300)" bgClip="text">
-              Reimagined.
-            </Box>
-          </MotionHeading>
-
-          <MotionText
-            fontSize={{ base: "lg", md: "xl" }}
-            color="whiteAlpha.700"
-            maxW="640px"
-            lineHeight="1.7"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.35 }}
-          >
-            Create custom submission forms, collect entries, assign judges with AI,
-            and get instant leaderboards — all in one beautifully crafted platform.
-          </MotionText>
-
+          {/* Right -- Rotating Flow Animation */}
           <MotionBox
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            flex={1}
+            display="flex"
+            justifyContent="center"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
           >
-            <HStack spacing={4} pt={4}>
-              <Button
-                size="lg"
-                colorScheme="brand"
-                px={8}
-                fontSize="lg"
-                rightIcon={<HiOutlineArrowRight />}
-                onClick={() => router.push("/register")}
-                _hover={{
-                  transform: "translateY(-2px)",
-                  boxShadow: "0 10px 40px rgba(124, 58, 237, 0.4)",
-                }}
-                sx={{
-                  position: "relative",
-                  overflow: "hidden",
-                  _after: {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: "-100%",
-                    w: "200%",
-                    h: "100%",
-                    bg: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
-                    animation: "shimmer 3s infinite",
-                  },
-                  "@keyframes shimmer": {
-                    "0%": { left: "-100%" },
-                    "100%": { left: "100%" },
-                  },
-                }}
-              >
-                Create Your Event
-              </Button>
-              <Button
-                size="lg"
-                variant="glass"
-                px={8}
-                fontSize="lg"
-                color="whiteAlpha.800"
-                onClick={() => router.push("/login")}
-              >
-                Sign In
-              </Button>
-            </HStack>
+            <RotatingFlowCard />
           </MotionBox>
-        </MotionVStack>
+        </Flex>
       </Container>
 
       {/* ===== STATS BAR ===== */}
@@ -482,15 +704,9 @@ export default function Home() {
                 justify="center"
                 gap={8}
               >
-                {[
-                  { name: "Archestra.ai", emoji: "🤖", desc: "AI Orchestration" },
-                  { name: "Supabase", emoji: "⚡", desc: "Auth & Database" },
-                  { name: "Cloudflare R2", emoji: "☁️", desc: "File Storage" },
-                  { name: "Next.js", emoji: "▲", desc: "Frontend" },
-                  { name: "FastAPI", emoji: "🚀", desc: "Backend" },
-                ].map((tech) => (
+                {TECH_STACK.map((tech) => (
                   <VStack key={tech.name} spacing={2} minW="100px">
-                    <Text fontSize="2xl">{tech.emoji}</Text>
+                    <Icon as={tech.icon} boxSize={7} color={tech.color} />
                     <Text fontSize="sm" fontWeight="600" color="whiteAlpha.800">
                       {tech.name}
                     </Text>
@@ -572,7 +788,7 @@ export default function Home() {
                 Juryline
               </Text>
               <Text fontSize="sm" color="whiteAlpha.500">
-                Built with ❤️ and Archestra.ai
+                Built with love by Tushar Khatri
               </Text>
             </HStack>
             <Text fontSize="xs" color="whiteAlpha.400">

@@ -12,7 +12,7 @@ import {
     WrapItem,
     AspectRatio,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon, DownloadIcon } from "@chakra-ui/icons";
+import { HiOutlineArrowTopRightOnSquare, HiOutlineArrowDownTray } from "react-icons/hi2";
 import type { FormDataDisplayItem } from "@/lib/types";
 
 interface Props {
@@ -68,7 +68,7 @@ export default function SubmissionFieldDisplay({ item }: Props) {
                         fontWeight="medium"
                         _hover={{ color: "purple.200", textDecor: "underline" }}
                     >
-                        {value} <ExternalLinkIcon mx="2px" />
+                        {value} <HiOutlineArrowTopRightOnSquare style={{ display: "inline", marginLeft: 2 }} />
                     </Link>
                 );
 
@@ -147,7 +147,7 @@ export default function SubmissionFieldDisplay({ item }: Props) {
                                     color="purple.300"
                                     fontSize="sm"
                                 >
-                                    <DownloadIcon mr={1} /> {filename}
+                                    <HiOutlineArrowDownTray style={{ marginRight: 4, display: "inline" }} /> {filename}
                                 </Link>
                             );
                         })}
@@ -183,8 +183,21 @@ export default function SubmissionFieldDisplay({ item }: Props) {
     };
 
     return (
-        <Box>
-            <Text fontSize="xs" color="gray.400" textTransform="uppercase" mb={1}>
+        <Box
+            pl={4}
+            borderLeft="2px solid"
+            borderLeftColor="whiteAlpha.100"
+            _hover={{ borderLeftColor: "purple.400" }}
+            transition="border-color 0.2s"
+        >
+            <Text
+                fontSize="xs"
+                color="gray.400"
+                textTransform="uppercase"
+                letterSpacing="wide"
+                fontWeight="semibold"
+                mb={1.5}
+            >
                 {label}
             </Text>
             {renderValue()}

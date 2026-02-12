@@ -89,7 +89,9 @@ async def assign_judges(event_id: str, user: dict = Depends(require_organizer)):
     ).data or []
 
     for sub in submissions:
-        display = submission_service.enrich_for_display(sub.get("form_data", {}), form_fields)
+        sub["event_id"] = event_id  # enrich_for_display needs event_id
+        enriched = await submission_service.enrich_for_display(sub)
+        display = enriched.get("form_data_display", [])
         # Use first text field as project_name
         sub["project_name"] = next(
             (d["value"] for d in display if d["field_type"] in ("short_text",) and d["value"]),
@@ -216,7 +218,8 @@ async def aggregate_scores(event_id: str, user: dict = Depends(require_organizer
 
     submissions_with_reviews = []
     for sub in subs:
-        display = submission_service.enrich_for_display(sub.get("form_data", {}), form_fields)
+        enriched = await submission_service.enrich_for_display(sub)
+        display = enriched.get("form_data_display", [])
         project_name = next(
             (d["value"] for d in display if d["field_type"] in ("short_text",) and d["value"]),
             f"Submission {sub['id'][:8]}",

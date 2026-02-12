@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     Box,
-    Container,
+    Flex,
     Heading,
     Text,
     Button,
@@ -21,12 +21,28 @@ import {
     Link,
     Progress,
     useToast,
+    Icon,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { HiOutlineEye, HiOutlineEyeSlash } from "react-icons/hi2";
+import {
+    HiOutlineEye,
+    HiOutlineEyeSlash,
+    HiOutlineArrowRight,
+    HiOutlineSparkles,
+    HiOutlineDocumentText,
+    HiOutlineArrowPath,
+    HiOutlinePresentationChartBar,
+} from "react-icons/hi2";
 import { createClient } from "@/lib/supabase/client";
 
 const MotionBox = motion.create(Box);
+const MotionFlex = motion.create(Flex);
+
+const STEPS = [
+    { num: "01", title: "Create your event", desc: "Set up criteria, deadlines, and custom forms" },
+    { num: "02", title: "Collect submissions", desc: "Participants submit via shareable links" },
+    { num: "03", title: "Review & rank", desc: "AI assigns judges, scores aggregate instantly" },
+];
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
     if (!pw) return { score: 0, label: "", color: "gray" };
@@ -54,8 +70,10 @@ export default function RegisterPage() {
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const router = useRouter();
+    const searchParams = useSearchParams();
     const toast = useToast();
     const supabase = createClient();
+    const returnTo = searchParams.get("returnTo");
 
     const strength = useMemo(() => getPasswordStrength(password), [password]);
 
@@ -106,38 +124,117 @@ export default function RegisterPage() {
     };
 
     return (
-        <Box minH="100vh" bg="gray.900" position="relative" overflow="hidden">
-            <Box
-                position="absolute"
-                top="-20%"
-                right="-10%"
-                w="500px"
-                h="500px"
-                borderRadius="full"
-                bg="brand.600"
-                filter="blur(120px)"
-                opacity={0.12}
-            />
+        <Flex minH="100vh" bg="gray.900">
+            {/* Left Panel -- Branding */}
+            <MotionFlex
+                display={{ base: "none", lg: "flex" }}
+                flex={1}
+                direction="column"
+                justify="center"
+                align="center"
+                p={16}
+                position="relative"
+                overflow="hidden"
+                bgGradient="linear(to-br, brand.600, brand.900)"
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6 }}
+            >
+                <Box position="absolute" top="-15%" right="-15%" w="400px" h="400px" borderRadius="full" bg="whiteAlpha.100" filter="blur(80px)" />
+                <Box position="absolute" bottom="-10%" left="-10%" w="300px" h="300px" borderRadius="full" bg="accent.500" filter="blur(100px)" opacity={0.2} />
 
-            <Container maxW="md" py={20} position="relative" zIndex={1}>
+                <VStack spacing={10} maxW="400px" position="relative" zIndex={1}>
+                    <VStack spacing={4} textAlign="center">
+                        <HStack spacing={2}>
+                            <Icon as={HiOutlineSparkles} boxSize={6} color="brand.200" />
+                            <Text fontSize="2xl" fontWeight="800" color="white" letterSpacing="tight">
+                                Juryline
+                            </Text>
+                        </HStack>
+
+                        <Heading fontSize="2xl" color="white" fontWeight="700" lineHeight="1.3">
+                            Get started in minutes
+                        </Heading>
+                        <Text color="whiteAlpha.600" fontSize="sm">
+                            Everything you need to run a great hackathon
+                        </Text>
+                    </VStack>
+
+                    <VStack spacing={6} w="full" align="stretch">
+                        {STEPS.map((step, i) => (
+                            <MotionBox
+                                key={i}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.4, delay: 0.3 + i * 0.15 }}
+                            >
+                                <HStack spacing={4} align="flex-start">
+                                    <Flex
+                                        w={10}
+                                        h={10}
+                                        borderRadius="xl"
+                                        bg="whiteAlpha.100"
+                                        align="center"
+                                        justify="center"
+                                        flexShrink={0}
+                                        border="1px solid"
+                                        borderColor="whiteAlpha.100"
+                                    >
+                                        <Text fontSize="sm" fontWeight="700" color="brand.200">
+                                            {step.num}
+                                        </Text>
+                                    </Flex>
+                                    <VStack spacing={0} align="start">
+                                        <Text color="white" fontSize="sm" fontWeight="600">
+                                            {step.title}
+                                        </Text>
+                                        <Text color="whiteAlpha.500" fontSize="xs">
+                                            {step.desc}
+                                        </Text>
+                                    </VStack>
+                                </HStack>
+                            </MotionBox>
+                        ))}
+                    </VStack>
+                </VStack>
+            </MotionFlex>
+
+            {/* Right Panel -- Form */}
+            <Flex flex={1} align="center" justify="center" p={{ base: 6, md: 12 }} position="relative">
+                <Box
+                    position="absolute"
+                    top="-20%"
+                    right="-10%"
+                    w="500px"
+                    h="500px"
+                    borderRadius="full"
+                    bg="brand.600"
+                    filter="blur(120px)"
+                    opacity={0.08}
+                />
+
                 <MotionBox
+                    w="full"
+                    maxW="420px"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    p={8}
-                    borderRadius="2xl"
-                    bg="whiteAlpha.50"
-                    backdropFilter="blur(20px)"
-                    border="1px solid"
-                    borderColor="whiteAlpha.100"
+                    transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                    <VStack spacing={6} as="form" onSubmit={handleSubmit}>
-                        <VStack spacing={2} textAlign="center" w="full">
-                            <Heading size="lg" color="white">
-                                Create Account
+                    {/* Mobile logo */}
+                    <HStack spacing={2} mb={8} display={{ base: "flex", lg: "none" }} justify="center">
+                        <Icon as={HiOutlineSparkles} boxSize={5} color="brand.300" />
+                        <Text fontSize="xl" fontWeight="800" bgGradient="linear(to-r, white, brand.300)" bgClip="text">
+                            Juryline
+                        </Text>
+                    </HStack>
+
+                    <VStack spacing={5} as="form" onSubmit={handleSubmit} align="stretch">
+                        <VStack spacing={1} align={{ base: "center", lg: "flex-start" }}>
+                            <Heading size="lg" color="white" fontWeight="700">
+                                Create account
                             </Heading>
-                            <Text color="whiteAlpha.600" fontSize="sm">
-                                Join Juryline to organize or participate in hackathons
+                            <Text color="whiteAlpha.500" fontSize="sm">
+                                Join Juryline to organize or participate
                             </Text>
                         </VStack>
 
@@ -150,6 +247,10 @@ export default function RegisterPage() {
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Alex Johnson"
                                 size="lg"
+                                bg="whiteAlpha.50"
+                                borderColor="whiteAlpha.100"
+                                _hover={{ borderColor: "whiteAlpha.200" }}
+                                _focus={{ borderColor: "brand.400", boxShadow: "0 0 0 1px var(--chakra-colors-brand-400)" }}
                             />
                             <FormErrorMessage>{errors.name}</FormErrorMessage>
                         </FormControl>
@@ -164,6 +265,10 @@ export default function RegisterPage() {
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="alex@example.com"
                                 size="lg"
+                                bg="whiteAlpha.50"
+                                borderColor="whiteAlpha.100"
+                                _hover={{ borderColor: "whiteAlpha.200" }}
+                                _focus={{ borderColor: "brand.400", boxShadow: "0 0 0 1px var(--chakra-colors-brand-400)" }}
                             />
                             <FormErrorMessage>{errors.email}</FormErrorMessage>
                         </FormControl>
@@ -179,6 +284,10 @@ export default function RegisterPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Min 6 characters"
                                     pr="3rem"
+                                    bg="whiteAlpha.50"
+                                    borderColor="whiteAlpha.100"
+                                    _hover={{ borderColor: "whiteAlpha.200" }}
+                                    _focus={{ borderColor: "brand.400", boxShadow: "0 0 0 1px var(--chakra-colors-brand-400)" }}
                                 />
                                 <InputRightElement>
                                     <IconButton
@@ -231,6 +340,8 @@ export default function RegisterPage() {
                                 size="lg"
                                 bg="whiteAlpha.50"
                                 borderColor="whiteAlpha.100"
+                                _hover={{ borderColor: "whiteAlpha.200" }}
+                                _focus={{ borderColor: "brand.400", boxShadow: "0 0 0 1px var(--chakra-colors-brand-400)" }}
                             >
                                 <option value="participant" style={{ background: "#1a202c" }}>
                                     Participant
@@ -244,23 +355,34 @@ export default function RegisterPage() {
                         <Button
                             type="submit"
                             colorScheme="brand"
+                            color="white"
                             size="lg"
                             w="full"
                             isLoading={loading}
                             loadingText="Creating account..."
+                            rightIcon={<HiOutlineArrowRight />}
+                            _hover={{
+                                transform: "translateY(-1px)",
+                                boxShadow: "0 8px 30px rgba(124, 58, 237, 0.35)",
+                            }}
                         >
-                            Sign Up
+                            Create Account
                         </Button>
 
-                        <Text color="whiteAlpha.500" fontSize="sm">
+                        <Text color="whiteAlpha.500" fontSize="sm" textAlign="center">
                             Already have an account?{" "}
-                            <Link color="brand.300" href="/login">
-                                Log in
+                            <Link
+                                color="brand.300"
+                                href={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"}
+                                fontWeight="600"
+                                _hover={{ color: "brand.200" }}
+                            >
+                                Sign in
                             </Link>
                         </Text>
                     </VStack>
                 </MotionBox>
-            </Container>
-        </Box>
+            </Flex>
+        </Flex>
     );
 }

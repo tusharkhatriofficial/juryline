@@ -3,9 +3,23 @@ Juryline -- Scoring Service
 Compute leaderboards, judge progress, bias detection, and statistics.
 """
 
+import json
 from statistics import mean, stdev
 from app.supabase_client import supabase
-from app.services.submission_service import submission_service
+
+
+def _ensure_dict(value) -> dict:
+    """Safely coerce a value to a dict. Handles JSON strings from JSONB columns."""
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, dict):
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return {}
 
 
 class ScoringService:
@@ -72,27 +86,26 @@ class ScoringService:
             if not sub_reviews:
                 continue
 
-            # Extract project name
-            display = submission_service.enrich_for_display(
-                sub.get("form_data", {}), form_fields
-            )
-            project_name = next(
-                (
-                    d["value"]
-                    for d in display
-                    if d["field_type"] in ("short_text",) and d["value"]
-                ),
-                f"Submission {sub['id'][:8]}",
-            )
+            # Extract project name from form data
+            raw_form = _ensure_dict(sub.get("form_data", {}))
+            # Try to find a short_text field value for the project name
+            project_name = None
+            for field in form_fields:
+                val = raw_form.get(field["id"]) or raw_form.get(field["label"])
+                if field["field_type"] == "short_text" and val:
+                    project_name = val
+                    break
+            if not project_name:
+                project_name = f"Submission {sub['id'][:8]}"
 
             # Compute per-criterion scores
             criteria_scores = {}
             for crit in criteria:
                 crit_id = crit["id"]
                 scores = [
-                    float(r["scores"].get(crit_id, 0))
+                    float(_ensure_dict(r["scores"]).get(crit_id, 0))
                     for r in sub_reviews
-                    if crit_id in r.get("scores", {})
+                    if crit_id in _ensure_dict(r.get("scores", {}))
                 ]
 
                 if scores:
@@ -180,7 +193,7 @@ class ScoringService:
         # Compute average score
         all_scores = []
         for review in all_reviews:
-            scores_dict = review.get("scores", {})
+            scores_dict = _ensure_dict(review.get("scores", {}))
             all_scores.extend([float(s) for s in scores_dict.values()])
 
         avg_score = round(mean(all_scores), 2) if all_scores else None
@@ -303,7 +316,7 @@ class ScoringService:
 
         for review in reviews:
             jid = review["judge_id"]
-            scores_dict = review.get("scores", {})
+            scores_dict = _ensure_dict(review.get("scores", {}))
             scores = [float(s) for s in scores_dict.values()]
 
             if jid not in judge_scores:

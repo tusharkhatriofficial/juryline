@@ -102,8 +102,12 @@ export function SubmissionsTab({ eventId }: SubmissionsTabProps) {
             : Object.keys(first.form_data);
 
         const rows = submissions.map((sub) =>
-            headerKeys.map((key) => {
-                const val = sub.form_data[key];
+            headerKeys.map((key, i) => {
+                // Try form_data_display first (handles label-keyed data)
+                const displayItem = sub.form_data_display?.find(
+                    (d) => d.field_id === key
+                );
+                const val = displayItem?.value ?? sub.form_data[key];
                 if (Array.isArray(val)) return val.join("; ");
                 return String(val ?? "");
             })
@@ -282,7 +286,11 @@ function SubmissionRow({
                     {index}
                 </Td>
                 {previewFields.map((pf) => {
-                    const val = submission.form_data[pf.field_id];
+                    // Look up from form_data_display (handles both ID and label keys)
+                    const displayItem = submission.form_data_display?.find(
+                        (d) => d.field_id === pf.field_id
+                    );
+                    const val = displayItem?.value ?? submission.form_data[pf.field_id];
                     return (
                         <Td
                             key={pf.field_id}

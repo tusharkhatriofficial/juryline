@@ -4,7 +4,18 @@ Deterministic implementations of judge assignment, progress tracking,
 and score aggregation. Used when Archestra is offline or unconfigured.
 """
 
+import json
 from statistics import mean
+
+
+def _ensure_dict(val: any) -> dict:
+    """JSONB columns may be returned as JSON strings. Parse if needed."""
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return val if isinstance(val, dict) else {}
 
 
 class FallbackService:
@@ -147,7 +158,8 @@ class FallbackService:
             for crit in criteria:
                 scores_for_crit = []
                 for rev in reviews:
-                    s = rev.get("scores", {}).get(crit["id"])
+                    rev_scores = _ensure_dict(rev.get("scores", {}))
+                    s = rev_scores.get(crit["id"])
                     if s is not None:
                         scores_for_crit.append(float(s))
                 if scores_for_crit:
@@ -177,7 +189,8 @@ class FallbackService:
                     continue
                 avg = mean(scores_list)
                 for rev in reviews:
-                    s = rev.get("scores", {}).get(crit_id)
+                    rev_scores = _ensure_dict(rev.get("scores", {}))
+                    s = rev_scores.get(crit_id)
                     if s is not None and abs(float(s) - avg) > 2:
                         outliers.append({
                             "judge_id": rev.get("judge_id", ""),

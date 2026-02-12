@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     frontend_url: str = "http://localhost:3000"
     port: int = 8000
+    cors_origins: str = ""  # Comma-separated allowed origins, e.g. "http://localhost:4000,https://juryline.app"
 
     # ── Archestra (Phase 06) ──
     archestra_api_key: str = ""
