@@ -706,7 +706,7 @@ export default function Home() {
               >
                 {TECH_STACK.map((tech) => (
                   <VStack key={tech.name} spacing={2} minW="100px">
-                    <Icon as={tech.icon} boxSize={7} color={tech.color} />
+                    <Icon as={tech.icon} boxSize={7} color="brand.300" />
                     <Text fontSize="sm" fontWeight="600" color="whiteAlpha.800">
                       {tech.name}
                     </Text>

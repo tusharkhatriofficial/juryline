@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
     Box,
@@ -22,6 +22,8 @@ import {
     Progress,
     useToast,
     Icon,
+    Center,
+    Spinner,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
@@ -60,7 +62,7 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
     return { score: 100, label: "Very Strong", color: "cyan" };
 }
 
-export default function RegisterPage() {
+function RegisterPageContent() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -384,5 +386,19 @@ export default function RegisterPage() {
                 </MotionBox>
             </Flex>
         </Flex>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <Flex minH="100vh" bgGradient="linear(to-br, gray.900, gray.800)">
+                <Center w="full">
+                    <Spinner size="xl" color="brand.300" />
+                </Center>
+            </Flex>
+        }>
+            <RegisterPageContent />
+        </Suspense>
     );
 }

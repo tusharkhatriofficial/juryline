@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Center, Spinner } from "@chakra-ui/react";
+import { Center, Spinner, Box } from "@chakra-ui/react";
 import { useAuth } from "@/hooks/useAuth";
+import { Navbar } from "./Navbar";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -12,7 +13,7 @@ interface ProtectedRouteProps {
     fallback?: React.ReactNode;
 }
 
-export function ProtectedRoute({ children, allowedRoles, fallback }: ProtectedRouteProps) {
+function ProtectedRouteContent({ children, allowedRoles, fallback }: ProtectedRouteProps) {
     const { user, loading, role } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -45,4 +46,19 @@ export function ProtectedRoute({ children, allowedRoles, fallback }: ProtectedRo
     if (allowedRoles && role && !allowedRoles.includes(role)) return null;
 
     return <>{children}</>;
+}
+
+export function ProtectedRoute(props: ProtectedRouteProps) {
+    return (
+        <Suspense fallback={
+            <Box minH="100vh" bg="gray.900">
+                <Navbar />
+                <Center h="80vh">
+                    <Spinner size="xl" color="brand.300" />
+                </Center>
+            </Box>
+        }>
+            <ProtectedRouteContent {...props} />
+        </Suspense>
+    );
 }

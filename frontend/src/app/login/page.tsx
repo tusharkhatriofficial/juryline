@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
     Box,
@@ -23,6 +23,8 @@ import {
     AlertIcon,
     AlertDescription,
     Icon,
+    Center,
+    Spinner,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
@@ -46,7 +48,7 @@ const FEATURES = [
     { icon: HiOutlineChartBar, text: "Real-time leaderboards" },
 ];
 
-export default function LoginPage() {
+function LoginPageContent() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -343,5 +345,19 @@ export default function LoginPage() {
                 </MotionBox>
             </Flex>
         </Flex>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <Flex minH="100vh" bgGradient="linear(to-br, gray.900, gray.800)">
+                <Center w="full">
+                    <Spinner size="xl" color="brand.300" />
+                </Center>
+            </Flex>
+        }>
+            <LoginPageContent />
+        </Suspense>
     );
 }

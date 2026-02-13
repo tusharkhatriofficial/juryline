@@ -17,7 +17,7 @@ export async function GET(request: Request) {
             const {
                 data: { user },
             } = await supabase.auth.getUser();
-            const role = user?.user_metadata?.role;
+            const role = user?.user_metadata?.role as string | undefined;
 
             if (role === "judge" && eventId) {
                 return NextResponse.redirect(
@@ -25,10 +25,12 @@ export async function GET(request: Request) {
                 );
             }
 
-            const redirectTo =
-                { organizer: "/dashboard", judge: "/dashboard", participant: "/dashboard" }[
-                    role || ""
-                ] || "/dashboard";
+            const redirectMap: Record<string, string> = {
+                organizer: "/dashboard",
+                judge: "/dashboard",
+                participant: "/dashboard"
+            };
+            const redirectTo = redirectMap[role || ""] || "/dashboard";
             return NextResponse.redirect(`${origin}${redirectTo}`);
         }
     }
@@ -46,7 +48,7 @@ export async function GET(request: Request) {
             const {
                 data: { user },
             } = await supabase.auth.getUser();
-            const role = user?.user_metadata?.role;
+            const role = user?.user_metadata?.role as string | undefined;
 
             if (role === "judge" && eventId) {
                 return NextResponse.redirect(
@@ -54,10 +56,12 @@ export async function GET(request: Request) {
                 );
             }
 
-            const redirectTo =
-                { organizer: "/dashboard", judge: "/dashboard", participant: "/dashboard" }[
-                    role || ""
-                ] || "/dashboard";
+            const redirectMap: Record<string, string> = {
+                organizer: "/dashboard",
+                judge: "/dashboard",
+                participant: "/dashboard"
+            };
+            const redirectTo = redirectMap[role || ""] || "/dashboard";
             return NextResponse.redirect(`${origin}${redirectTo}`);
         }
     }

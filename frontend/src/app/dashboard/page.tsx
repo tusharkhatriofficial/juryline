@@ -510,9 +510,9 @@ function ParticipantDashboard() {
                                     border="1px solid"
                                     borderColor="whiteAlpha.100"
                                     _hover={{ borderColor: "green.400", transform: "translateY(-2px)" }}
-                                    transition="all 0.2s"
                                     cursor="pointer"
                                     onClick={() => router.push(`/submit/${event.id}`)}
+                                    style={{ transition: "all 0.2s" }}
                                 >
                                     <Heading size="sm" color="white">{event.name}</Heading>
                                     {event.description && (
