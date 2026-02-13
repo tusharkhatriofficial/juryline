@@ -3,11 +3,21 @@ Juryline — FastAPI Application
 Main entry point with CORS, health check, and router registration.
 """
 
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from app.config import get_settings
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -15,12 +25,12 @@ async def lifespan(app: FastAPI):
     """Application lifespan — startup and shutdown events."""
     # Startup
     settings = get_settings()
-    print(f"[Juryline] API starting in {settings.app_env} mode")
-    print(f"[Juryline] Supabase: {settings.supabase_url}")
-    print(f"[Juryline] Frontend: {settings.frontend_url}")
+    logger.info(f"API starting in {settings.app_env} mode")
+    logger.info(f"Supabase: {settings.supabase_url}")
+    logger.info(f"Frontend: {settings.frontend_url}")
     yield
     # Shutdown
-    print("[Juryline] API shutting down")
+    logger.info("API shutting down")
 
 
 app = FastAPI(
@@ -52,6 +62,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Security Headers & Compression ──
+if settings.is_production:
+    # Only allow requests from trusted hosts in production
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["*"],  # Configure with your domains in production
+    )
+
+# Add gzip compression for responses
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # ── Health Check ──

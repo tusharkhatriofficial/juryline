@@ -269,6 +269,43 @@ Then configure agents via `localhost:3001`. See `project-plan/06-archestra_integ
 
 ---
 
-## 📝 License
+## � Production Deployment
+
+Juryline is production-ready with support for:
+- **Backend**: Heroku, Docker, or any Python hosting
+- **Frontend**: Vercel, Netlify, or any Node.js hosting
+
+### Quick Deploy Commands
+
+**Heroku (Backend):**
+```bash
+cd backend
+heroku create your-app-name
+heroku config:set APP_ENV=production
+# ... set other env vars
+git push heroku main
+```
+
+**Vercel (Frontend):**
+```bash
+cd frontend
+vercel --prod
+```
+
+**Docker (Self-hosted):**
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Documentation
+
+- **📘 [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md)** - Complete deployment walkthrough
+- **⚡ [Quick Deploy Reference](docs/QUICK_DEPLOY.md)** - Cheat sheet with commands
+- **✅ [Production Checklist](docs/PRODUCTION_CHECKLIST.md)** - Pre-launch verification
+- **📦 [Production Improvements](docs/PRODUCTION_IMPROVEMENTS.md)** - What's been optimized
+
+---
+
+## �📝 License
 
 Built for hackathon demonstration purposes.

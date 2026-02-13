@@ -10,8 +10,11 @@ __pycache__/
 
 # Environment
 .env
+.env.local
+.env.production
 backend/.env
 frontend/.env
+frontend/.env.local
 
 # IDE
 .vscode/
@@ -21,3 +24,12 @@ frontend/.env
 # OS
 .DS_Store
 Thumbs.db
+
+# Production
+*.log
+logs/
+.vercel
+
+# Database
+*.db
+*.sqlite
