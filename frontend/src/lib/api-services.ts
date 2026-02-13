@@ -165,7 +165,13 @@ export async function listJudges(eventId: string): Promise<EventJudge[]> {
 export async function inviteJudge(
     eventId: string,
     data: { email: string; name: string }
-): Promise<{ message: string; invite_link?: string; judge_id?: string; email_sent?: boolean }> {
+): Promise<{ 
+    message: string; 
+    invite_link?: string; 
+    judge_id?: string; 
+    email_sent?: boolean;
+    email_error?: string;
+}> {
     const res = await api.post(`/events/${eventId}/judges/invite`, data);
     return res.data;
 }

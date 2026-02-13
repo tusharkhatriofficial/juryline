@@ -84,11 +84,16 @@ export function JudgesTab({ eventId, judges, setJudges }: JudgesTabProps) {
                     duration: 4000,
                 });
             } else {
+                // Determine if it's a warning or info based on presence of email_error
+                const hasError = result.email_error && result.email_error.trim() !== "";
                 toast({
-                    title: result.message,
-                    description: "Copy the invite link below and share it manually.",
-                    status: "info",
-                    duration: 4000,
+                    title: hasError ? "Email delivery failed" : result.message,
+                    description: hasError 
+                        ? `${result.email_error}. Copy the invite link below and share it manually.`
+                        : "Copy the invite link below and share it manually.",
+                    status: hasError ? "warning" : "info",
+                    duration: 6000,
+                    isClosable: true,
                 });
             }
         } catch (err: any) {

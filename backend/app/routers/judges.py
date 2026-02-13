@@ -3,6 +3,7 @@ Juryline -- Judges Router
 Invite and manage judges for events via Supabase magic links.
 """
 
+import logging
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
@@ -11,6 +12,7 @@ from app.config import get_settings
 from app.utils.dependencies import require_organizer, get_current_user
 
 router = APIRouter(prefix="/events/{event_id}/judges", tags=["judges"])
+logger = logging.getLogger(__name__)
 
 
 class JudgeInviteRequest(BaseModel):
@@ -62,6 +64,7 @@ async def invite_judge(
         # The Python SDK's invite_user_by_email doesn't work reliably,
         # but the OTP endpoint sends real emails through Supabase's mailer.
         email_sent = False
+        email_error = None
         try:
             async with httpx.AsyncClient() as client:
                 otp_resp = await client.post(
@@ -81,11 +84,26 @@ async def invite_judge(
                     },
                     timeout=10,
                 )
-                email_sent = otp_resp.status_code == 200
-        except Exception:
-            # If email sending fails (rate limit, SMTP issue), that's OK —
-            # the organizer still gets the link to share manually
-            pass
+                
+                if otp_resp.status_code == 200:
+                    email_sent = True
+                    logger.info(f"Successfully sent magic link email to {body.email}")
+                elif otp_resp.status_code == 429:
+                    email_error = "Rate limit exceeded. Please wait 60 seconds and try again."
+                    logger.warning(f"Rate limit hit when sending email to {body.email}")
+                else:
+                    email_error = f"Email service returned status {otp_resp.status_code}: {otp_resp.text}"
+                    logger.error(f"Failed to send email to {body.email}: {email_error}")
+                    
+        except httpx.TimeoutException:
+            email_error = "Email service timeout. Please try again."
+            logger.error(f"Timeout sending email to {body.email}")
+        except httpx.RequestError as e:
+            email_error = f"Email service connection error: {str(e)}"
+            logger.error(f"Request error sending email to {body.email}: {str(e)}")
+        except Exception as e:
+            email_error = f"Email sending failed: {str(e)}"
+            logger.error(f"Unexpected error sending email to {body.email}: {str(e)}")
 
         # Check if already invited
         existing = (
@@ -101,6 +119,7 @@ async def invite_judge(
                 "message": "Judge already invited",
                 "invite_link": invite_link,
                 "email_sent": email_sent,
+                "email_error": email_error,
             }
 
         # Create event_judges record
@@ -115,6 +134,7 @@ async def invite_judge(
             "invite_link": invite_link,
             "judge_id": judge_user_id,
             "email_sent": email_sent,
+            "email_error": email_error,
         }
 
     except HTTPException:
