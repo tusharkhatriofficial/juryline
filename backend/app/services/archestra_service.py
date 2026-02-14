@@ -4,6 +4,7 @@ Calls Archestra agents via JSON-RPC 2.0 protocol.
 Falls back to deterministic FallbackService when Archestra is offline/unconfigured.
 """
 
+import re
 import json
 import logging
 from uuid import uuid4
@@ -34,6 +35,20 @@ class ArchestraService:
     @property
     def is_configured(self) -> bool:
         return bool(self.base_url and self.api_key)
+
+    def _clean_json_text(self, text: str) -> str:
+        """Clean agent response text to extract valid JSON."""
+        # 1. Remove <think>...</think> blocks (common in reasoning models)
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+        
+        # 2. Extract JSON object from markdown code blocks or raw text
+        # Find the first '{' and the last '}'
+        start = text.find("{")
+        end = text.rfind("}")
+        
+        if start != -1 and end != -1:
+            return text[start : end + 1]
+        return text
 
     async def _call_agent(self, agent_name: str, payload: dict) -> dict | None:
         """
@@ -74,7 +89,9 @@ class ArchestraService:
                 resp.raise_for_status()
                 result = resp.json()
                 agent_text = result["result"]["parts"][0]["text"]
-                return json.loads(agent_text)
+                
+                cleaned_text = self._clean_json_text(agent_text)
+                return json.loads(cleaned_text)
         except Exception as e:
             logger.warning("Archestra agent '%s' call failed: %s. Using fallback.", agent_name, e)
             return None
