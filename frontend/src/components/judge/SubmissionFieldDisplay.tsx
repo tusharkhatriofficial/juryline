@@ -27,6 +27,23 @@ function isImageUrl(url: string): boolean {
     return /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(url);
 }
 
+function getEmbedUrl(url: string): string | null {
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+
+    // Vimeo
+    const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+
+    // Loom
+    if (url.includes("loom.com/share/")) {
+        return url.replace("share", "embed");
+    }
+
+    return null;
+}
+
 export default function SubmissionFieldDisplay({ item }: Props) {
     const { label, field_type, value } = item;
 
@@ -60,6 +77,43 @@ export default function SubmissionFieldDisplay({ item }: Props) {
                 );
 
             case "url":
+                // Check for embedded video
+                const embedUrl = getEmbedUrl(value);
+                if (embedUrl) {
+                    return (
+                        <VStack align="start" spacing={2} w="100%">
+                            <AspectRatio ratio={16 / 9} w="100%" maxW="600px">
+                                <iframe
+                                    src={embedUrl}
+                                    allowFullScreen
+                                    style={{ borderRadius: "8px", border: "none" }}
+                                />
+                            </AspectRatio>
+                            <Link href={value} isExternal color="purple.300" fontSize="sm">
+                                Open Original Link <HiOutlineArrowTopRightOnSquare style={{ display: "inline" }} />
+                            </Link>
+                        </VStack>
+                    );
+                }
+
+                // Check for direct video file in URL field
+                if (isVideoUrl(value)) {
+                    return (
+                        <VStack align="start" spacing={2} w="100%">
+                            <AspectRatio ratio={16 / 9} w="100%" maxW="600px">
+                                <video
+                                    src={value}
+                                    controls
+                                    style={{ borderRadius: "8px" }}
+                                />
+                            </AspectRatio>
+                            <Link href={value} isExternal color="purple.300" fontSize="sm">
+                                Download Video <HiOutlineArrowDownTray style={{ display: "inline" }} />
+                            </Link>
+                        </VStack>
+                    );
+                }
+
                 return (
                     <Link
                         href={value}

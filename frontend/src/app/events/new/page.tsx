@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { createEvent } from "@/lib/api-services";
+import { ImageUploader } from "@/components/common/ImageUploader";
 
 const MotionBox = motion.create(Box);
 
@@ -37,6 +38,7 @@ function CreateEventContent() {
     const [loading, setLoading] = useState(false);
 
     const [name, setName] = useState("");
+    const [bannerUrl, setBannerUrl] = useState("");
     const [description, setDescription] = useState("");
     const [startAt, setStartAt] = useState("");
     const [endAt, setEndAt] = useState("");
@@ -61,6 +63,7 @@ function CreateEventContent() {
             const event = await createEvent({
                 name: name.trim(),
                 description: description.trim() || undefined,
+                banner_url: bannerUrl || undefined,
                 start_at: new Date(startAt).toISOString(),
                 end_at: new Date(endAt).toISOString(),
                 judges_per_submission: judgesPerSubmission,
@@ -119,6 +122,13 @@ function CreateEventContent() {
                         borderColor="whiteAlpha.100"
                     >
                         <VStack spacing={6} align="stretch">
+                            <ImageUploader
+                                value={bannerUrl}
+                                onChange={setBannerUrl}
+                                label="Event Banner (Optional)"
+                                height="200px"
+                            />
+
                             <FormControl isRequired>
                                 <FormLabel color="whiteAlpha.800">Event Name</FormLabel>
                                 <Input

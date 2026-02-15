@@ -17,6 +17,7 @@ export interface Event {
     organizer_id: string;
     name: string;
     description?: string;
+    banner_url?: string;
     start_at: string;
     end_at: string;
     status: "draft" | "open" | "judging" | "closed";

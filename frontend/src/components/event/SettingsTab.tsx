@@ -25,6 +25,7 @@ import {
 import { HiOutlineCheck } from "react-icons/hi2";
 import { updateEvent } from "@/lib/api-services";
 import type { Event } from "@/lib/types";
+import { ImageUploader } from "@/components/common/ImageUploader";
 
 interface SettingsTabProps {
     event: Event;
@@ -45,6 +46,7 @@ export function SettingsTab({ event, setEvent, isDraft }: SettingsTabProps) {
         event.end_at ? new Date(event.end_at).toISOString().slice(0, 16) : ""
     );
     const [judgesPerSubmission, setJudgesPerSubmission] = useState(event.judges_per_submission);
+    const [bannerUrl, setBannerUrl] = useState(event.banner_url || "");
 
     const handleSave = async () => {
         if (!name.trim()) {
@@ -56,6 +58,7 @@ export function SettingsTab({ event, setEvent, isDraft }: SettingsTabProps) {
             const updated = await updateEvent(event.id, {
                 name: name.trim(),
                 description: description.trim() || undefined,
+                banner_url: bannerUrl || undefined,
                 start_at: startAt ? new Date(startAt).toISOString() : undefined,
                 end_at: endAt ? new Date(endAt).toISOString() : undefined,
                 judges_per_submission: judgesPerSubmission,
@@ -91,6 +94,13 @@ export function SettingsTab({ event, setEvent, isDraft }: SettingsTabProps) {
                 borderColor="whiteAlpha.100"
             >
                 <VStack spacing={5} align="stretch">
+                    <ImageUploader
+                        value={bannerUrl}
+                        onChange={setBannerUrl}
+                        label="Event Banner"
+                        height="200px"
+                    />
+
                     <FormControl>
                         <FormLabel color="whiteAlpha.800">Event Name</FormLabel>
                         <Input
@@ -169,10 +179,10 @@ export function SettingsTab({ event, setEvent, isDraft }: SettingsTabProps) {
                                 event.status === "draft"
                                     ? "gray"
                                     : event.status === "open"
-                                    ? "green"
-                                    : event.status === "judging"
-                                    ? "purple"
-                                    : "red"
+                                        ? "green"
+                                        : event.status === "judging"
+                                            ? "purple"
+                                            : "red"
                             }
                             textTransform="capitalize"
                         >

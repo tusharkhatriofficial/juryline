@@ -31,6 +31,7 @@ import {
     InputGroup,
     InputRightElement,
     Tooltip,
+    Image,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { HiOutlineArrowLeft, HiOutlineClipboard, HiOutlineCheck, HiOutlineLink } from "react-icons/hi2";
@@ -173,6 +174,26 @@ function EventDetailContent() {
             <Navbar />
             <Container maxW="container.xl" py={10}>
                 <VStack spacing={8} align="stretch">
+                    {/* Banner Image */}
+                    {event.banner_url && (
+                        <MotionBox
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                            borderRadius="2xl"
+                            overflow="hidden"
+                            maxH="300px"
+                        >
+                            <Image
+                                src={event.banner_url}
+                                alt={event.name}
+                                w="full"
+                                h="full"
+                                objectFit="cover"
+                            />
+                        </MotionBox>
+                    )}
+
                     {/* Header */}
                     <MotionBox
                         initial={{ opacity: 0, y: 20 }}
@@ -380,8 +401,8 @@ function EventDetailContent() {
                             {event.status === "draft"
                                 ? "Once open, form fields and criteria cannot be modified. Participants will be able to submit projects."
                                 : event.status === "open"
-                                ? "Submissions will be locked and judges can start reviewing."
-                                : "Judging will be finalized and scores will be locked."}
+                                    ? "Submissions will be locked and judges can start reviewing."
+                                    : "Judging will be finalized and scores will be locked."}
                         </AlertDialogBody>
                         <AlertDialogFooter>
                             <Button ref={cancelRef} onClick={onClose} variant="ghost" color="whiteAlpha.600">

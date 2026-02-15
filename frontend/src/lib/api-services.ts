@@ -6,6 +6,7 @@ import type { Event, FormField, Criterion, EventJudge, Submission, Review, Judge
 export async function createEvent(data: {
     name: string;
     description?: string;
+    banner_url?: string;
     start_at: string;
     end_at: string;
     judges_per_submission?: number;
@@ -29,6 +30,7 @@ export async function updateEvent(
     data: Partial<{
         name: string;
         description: string;
+        banner_url: string;
         start_at: string;
         end_at: string;
         judges_per_submission: number;
@@ -165,10 +167,10 @@ export async function listJudges(eventId: string): Promise<EventJudge[]> {
 export async function inviteJudge(
     eventId: string,
     data: { email: string; name: string }
-): Promise<{ 
-    message: string; 
-    invite_link?: string; 
-    judge_id?: string; 
+): Promise<{
+    message: string;
+    invite_link?: string;
+    judge_id?: string;
     email_sent?: boolean;
     email_error?: string;
 }> {
@@ -214,36 +216,24 @@ export async function uploadFileToR2(
     file: File,
     onProgress?: (pct: number) => void
 ): Promise<string> {
-    const { upload_url, public_url } = await getPresignedUploadUrl(
-        file.name,
-        file.type
-    );
+    const formData = new FormData();
+    formData.append("file", file);
 
-    await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PUT", upload_url);
-        xhr.setRequestHeader("Content-Type", file.type);
-
-        if (onProgress) {
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    onProgress(Math.round((e.loaded / e.total) * 100));
-                }
-            };
-        }
-
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                resolve();
-            } else {
-                reject(new Error(`Upload failed: ${xhr.status}`));
+    const res = await api.post("/uploads/proxy", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+                const percentCompleted = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                );
+                onProgress(percentCompleted);
             }
-        };
-        xhr.onerror = () => reject(new Error("Upload failed"));
-        xhr.send(file);
+        },
     });
 
-    return public_url;
+    return res.data.public_url;
 }
 
 // ── Submissions ──

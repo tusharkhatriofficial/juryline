@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
     Box,
     VStack,
@@ -29,6 +29,7 @@ interface UploadState {
     name: string;
     progress: number;
     uploading: boolean;
+    error?: string;
 }
 
 export function FileUploadField({ field, value, onChange, error }: FileUploadFieldProps) {
@@ -39,6 +40,7 @@ export function FileUploadField({ field, value, onChange, error }: FileUploadFie
                 name: url.split("/").pop() || "file",
                 progress: 100,
                 uploading: false,
+                error: undefined,
             }));
         }
         return [];
@@ -50,83 +52,109 @@ export function FileUploadField({ field, value, onChange, error }: FileUploadFie
     const accept = opts.accept ? (opts.accept as string[]).join(",") : undefined;
     const maxSizeMb = opts.max_size_mb || 100;
 
+    // Sync to parent form state
+    useEffect(() => {
+        const completedUrls = uploads
+            .filter((u) => u.url && !u.uploading && !u.error)
+            .map((u) => u.url);
+
+        // Only trigger if different (simple shallow check)
+        const current = Array.isArray(value) ? value : [];
+        const isDifferent =
+            completedUrls.length !== current.length ||
+            !completedUrls.every((u, i) => u === current[i]);
+
+        if (isDifferent) {
+            onChange(completedUrls);
+        }
+    }, [uploads, onChange, value]);
+
     const handleFiles = useCallback(
         async (files: FileList | null) => {
             if (!files || files.length === 0) return;
 
-            const newUploads: UploadState[] = [];
-
+            // Create placeholders first
+            const newPlaceholders: UploadState[] = [];
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-
                 if (file.size > maxSizeMb * 1024 * 1024) {
-                    continue; // skip files that are too large
+                    newPlaceholders.push({
+                        url: "",
+                        name: file.name,
+                        progress: 0,
+                        uploading: false,
+                        error: "File too large (max " + maxSizeMb + "MB)",
+                    });
+                    continue;
                 }
 
-                const idx = uploads.length + newUploads.length;
-                const placeholder: UploadState = {
+                newPlaceholders.push({
                     url: "",
                     name: file.name,
                     progress: 0,
                     uploading: true,
-                };
-                newUploads.push(placeholder);
+                });
+            }
 
-                setUploads((prev) => [...prev, placeholder]);
+            // Add to state immediately
+            setUploads((prev) => [...prev, ...newPlaceholders]);
 
-                try {
-                    const publicUrl = await uploadFileToR2(file, (pct) => {
-                        setUploads((prev) =>
-                            prev.map((u, j) =>
-                                j === idx ? { ...u, progress: pct } : u
-                            )
-                        );
-                    });
-
-                    setUploads((prev) =>
-                        prev.map((u, j) =>
-                            j === idx
-                                ? { ...u, url: publicUrl, progress: 100, uploading: false }
-                                : u
-                        )
-                    );
-                } catch {
-                    setUploads((prev) =>
-                        prev.map((u, j) =>
-                            j === idx ? { ...u, progress: 0, uploading: false } : u
-                        )
-                    );
+            // Start uploads
+            let placeholderIdx = 0;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.size > maxSizeMb * 1024 * 1024) {
+                    placeholderIdx++; // Skip this file in loop logic too
+                    continue;
                 }
+
+                // We need to find the correct index in 'uploads' state potentially?
+                // Actually, since async, it's risky to use index. 
+                // Better approach: use a temporary ID or just careful index calculation.
+                // Simplified: We appended N items. We know where they are relative to prev length.
+                // But handleFiles is closure. Let's do parallel uploads carefully.
+
+                const currentFile = file;
+                // We'll just trigger the upload logic. 
+                // Note: The index logic in original code was slightly flawed for batch uploads.
+                // Let's fix it by defining the upload function here.
+
+                uploadFile(currentFile, uploads.length + placeholderIdx);
+                placeholderIdx++;
             }
         },
-        [uploads.length, maxSizeMb]
+        [uploads.length, maxSizeMb] // Dependencies
     );
 
-    // Sync urls to parent whenever uploads state changes
-    const syncUrls = useCallback(
-        (items: UploadState[]) => {
-            const urls = items.filter((u) => u.url).map((u) => u.url);
-            onChange(urls.length > 0 ? urls : []);
-        },
-        [onChange]
-    );
+    const uploadFile = async (file: File, indexInState: number) => {
+        try {
+            const publicUrl = await uploadFileToR2(file, (pct) => {
+                setUploads((prev) =>
+                    prev.map((u, j) => j === indexInState ? { ...u, progress: pct } : u)
+                );
+            });
 
-    const removeFile = (idx: number) => {
-        const next = uploads.filter((_, i) => i !== idx);
-        setUploads(next);
-        syncUrls(next);
+            setUploads((prev) =>
+                prev.map((u, j) =>
+                    j === indexInState
+                        ? { ...u, url: publicUrl, progress: 100, uploading: false, error: undefined }
+                        : u
+                )
+            );
+        } catch (err: any) {
+            setUploads((prev) =>
+                prev.map((u, j) =>
+                    j === indexInState
+                        ? { ...u, progress: 0, uploading: false, error: "Upload failed" }
+                        : u
+                )
+            );
+        }
     };
 
-    // After uploads complete, sync
-    const prevCompleted = useRef(0);
-    const completedCount = uploads.filter((u) => !u.uploading && u.url).length;
-    if (completedCount !== prevCompleted.current) {
-        prevCompleted.current = completedCount;
-        const urls = uploads.filter((u) => u.url && !u.uploading).map((u) => u.url);
-        if (urls.length > 0) {
-            setTimeout(() => onChange(urls), 0);
-        }
-    }
+    const removeFile = (idx: number) => {
+        setUploads((prev) => prev.filter((_, i) => i !== idx));
+    };
 
     const isImage = (name: string) =>
         /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name);
@@ -223,6 +251,11 @@ export function FileUploadField({ field, value, onChange, error }: FileUploadFie
                                             w="100%"
                                             borderRadius="full"
                                         />
+                                    )}
+                                    {upload.error && (
+                                        <Text fontSize="xs" color="red.300">
+                                            {upload.error}
+                                        </Text>
                                     )}
                                 </VStack>
                             </HStack>

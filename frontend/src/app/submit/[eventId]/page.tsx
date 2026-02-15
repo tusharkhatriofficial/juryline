@@ -16,6 +16,7 @@ import {
     Center,
     Alert,
     AlertIcon,
+    Image,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { HiOutlinePaperAirplane, HiOutlinePencil } from "react-icons/hi2";
@@ -265,6 +266,22 @@ function SubmissionFormContent() {
                 transition={{ duration: 0.5 }}
                 mb={8}
             >
+                {event.banner_url && (
+                    <Box
+                        mb={6}
+                        borderRadius="xl"
+                        overflow="hidden"
+                        maxH="300px"
+                    >
+                        <Image
+                            src={event.banner_url}
+                            alt={event.name}
+                            w="full"
+                            h="full"
+                            objectFit="cover"
+                        />
+                    </Box>
+                )}
                 <VStack spacing={3} align="start">
                     <HStack justify="space-between" w="100%">
                         <Heading size="lg" color="white">

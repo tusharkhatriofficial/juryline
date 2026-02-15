@@ -10,6 +10,7 @@ from datetime import datetime
 class EventCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
+    banner_url: Optional[str] = None
     start_at: datetime
     end_at: datetime
     judges_per_submission: int = Field(default=2, ge=1, le=10)
@@ -18,6 +19,7 @@ class EventCreate(BaseModel):
 class EventUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
+    banner_url: Optional[str] = None
     start_at: Optional[datetime] = None
     end_at: Optional[datetime] = None
     judges_per_submission: Optional[int] = Field(None, ge=1, le=10)
@@ -32,6 +34,7 @@ class EventResponse(BaseModel):
     organizer_id: str
     name: str
     description: Optional[str] = None
+    banner_url: Optional[str] = None
     start_at: str
     end_at: str
     status: str
