@@ -25,11 +25,11 @@ This script is designed to showcase the platform's core value: **efficiency, tra
 
 *Action: Click **"Submissions"** tab.*
 
-**"I can see all 20 submissions instantly. But the real magic happens when I invite judges."**
+**"I can see all 20 submissions instantly. But the real magic happens when I invite judges."** [SHOW the invite feature]
 
 *Action: Click **"Judges"** tab -> Show 'Auto-Assign' button.*
 
-**"I simply click the 'Auto-Assign' button, and Archestra's AI Agents instantly distribute the workload. It analyzes every submission to match the right project with the right judge expertise."**
+**"I simply click the 'Auto-Assign' button, and Archestra's AI Agents instantly distribute the workload. It intelligently balances assignments so no judge is overwhelmed."**
 
 ### Phase 3: The Judge Experience (1:00 - 2:00)
 *Action: **Switch to Incognito Window** (Judge View).*

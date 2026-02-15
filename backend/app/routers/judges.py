@@ -54,6 +54,10 @@ async def invite_judge(
 
         judge_user_id = None
         
+        # Defensive check: if query failed completely
+        if existing_user is None:
+             raise HTTPException(status_code=500, detail="Database query failed: existing_user response is None")
+
         if existing_user.data:
             judge_user_id = existing_user.data["id"]
         else:
@@ -70,6 +74,10 @@ async def invite_judge(
                 # If create fails (e.g. race condition), try fetching again
                 logger.warning(f"Create user failed, trying to fetch: {e}")
                 retry_user = supabase.table("profiles").select("id").eq("email", body.email).maybe_single().execute()
+                
+                if retry_user is None:
+                    raise HTTPException(status_code=500, detail="Database query failed: retry_user response is None")
+                    
                 if retry_user.data:
                     judge_user_id = retry_user.data["id"]
                 else:
@@ -108,6 +116,9 @@ async def invite_judge(
             .execute()
         )
 
+        if existing_invite is None:
+             raise HTTPException(status_code=500, detail="Database query failed: existing_invite response is None")
+
         if existing_invite.data:
             return {
                 "message": "Judge already invited",
@@ -133,6 +144,7 @@ async def invite_judge(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Unexpected error in invite_judge")
         raise HTTPException(status_code=400, detail=str(e))
 
 
