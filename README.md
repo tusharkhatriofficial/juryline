@@ -70,7 +70,7 @@ R2_PUBLIC_URL=https://your-r2-public-domain.com
 
 # Archestra AI (Self-Hosted)
 ARCHESTRA_API_KEY=your-archestra-key
-ARCHESTRA_BASE_URL=https://arch.tusharkhatri.in
+ARCHESTRA_BASE_URL=https://baserul.com
 # Agent Prompt IDs (if running own swarm)
 ARCHESTRA_INGEST_PROMPT_ID=...
 ARCHESTRA_ASSIGN_PROMPT_ID=...
@@ -93,8 +93,7 @@ docker compose up -d --build
 Populate the database with a production-grade demo dataset (Events, Submissions, Videos, Reviews):
 
 ```bash
-# Verify the backend container is running first
-docker compose exec backend python seed.py
+db/seed.py
 ```
 
 This script will:
