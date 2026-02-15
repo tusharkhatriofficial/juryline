@@ -37,6 +37,7 @@ import {
 } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/hooks/useAuth";
 
 const MotionBox = motion.create(Box);
 const MotionVStack = motion.create(VStack);
@@ -341,6 +342,7 @@ const TECH_STACK = [
 
 export default function Home() {
   const router = useRouter();
+  const { user } = useAuth();
 
   return (
     <Box minH="100vh" bg="gray.900" position="relative" overflow="hidden">
@@ -455,49 +457,69 @@ export default function Home() {
               </Text>
 
               <HStack spacing={4} pt={2}>
-                <Button
-                  size="lg"
-                  colorScheme="brand"
-                  color="white"
-                  px={8}
-                  fontSize="lg"
-                  rightIcon={<HiOutlineArrowRight />}
-                  onClick={() => router.push("/register")}
-                  _hover={{
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 10px 40px rgba(124, 58, 237, 0.4)",
-                  }}
-                  sx={{
-                    position: "relative",
-                    overflow: "hidden",
-                    _after: {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: "-100%",
-                      w: "200%",
-                      h: "100%",
-                      bg: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
-                      animation: "shimmer 3s infinite",
-                    },
-                    "@keyframes shimmer": {
-                      "0%": { left: "-100%" },
-                      "100%": { left: "100%" },
-                    },
-                  }}
-                >
-                  Create Your Event
-                </Button>
-                <Button
-                  size="lg"
-                  variant="glass"
-                  px={8}
-                  fontSize="lg"
-                  color="whiteAlpha.800"
-                  onClick={() => router.push("/login")}
-                >
-                  Sign In
-                </Button>
+                {user ? (
+                  <Button
+                    size="lg"
+                    colorScheme="brand"
+                    color="white"
+                    px={8}
+                    fontSize="lg"
+                    rightIcon={<HiOutlineArrowRight />}
+                    onClick={() => router.push("/dashboard")}
+                    _hover={{
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 10px 40px rgba(124, 58, 237, 0.4)",
+                    }}
+                  >
+                    Go to Dashboard
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      size="lg"
+                      colorScheme="brand"
+                      color="white"
+                      px={8}
+                      fontSize="lg"
+                      rightIcon={<HiOutlineArrowRight />}
+                      onClick={() => router.push("/register")}
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 10px 40px rgba(124, 58, 237, 0.4)",
+                      }}
+                      sx={{
+                        position: "relative",
+                        overflow: "hidden",
+                        _after: {
+                          content: '""',
+                          position: "absolute",
+                          top: 0,
+                          left: "-100%",
+                          w: "200%",
+                          h: "100%",
+                          bg: "linear-gradient(90deg, transparent, rgba(255,b255,255,0.15), transparent)",
+                          animation: "shimmer 3s infinite",
+                        },
+                        "@keyframes shimmer": {
+                          "0%": { left: "-100%" },
+                          "100%": { left: "100%" },
+                        },
+                      }}
+                    >
+                      Create Your Event
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="glass"
+                      px={8}
+                      fontSize="lg"
+                      color="whiteAlpha.800"
+                      onClick={() => router.push("/login")}
+                    >
+                      Sign In
+                    </Button>
+                  </>
+                )}
               </HStack>
             </VStack>
           </MotionBox>
@@ -759,7 +781,7 @@ export default function Home() {
                 fontSize="lg"
                 fontWeight="700"
                 rightIcon={<HiOutlineArrowRight />}
-                onClick={() => router.push("/register")}
+                onClick={() => router.push(user ? "/dashboard" : "/register")}
                 position="relative"
                 _hover={{
                   transform: "translateY(-2px)",
@@ -767,7 +789,7 @@ export default function Home() {
                   bg: "gray.50",
                 }}
               >
-                Get Started Free
+                {user ? "Go to Dashboard" : "Get Started Free"}
               </Button>
             </VStack>
           </RevealSection>

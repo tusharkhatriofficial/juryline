@@ -36,6 +36,10 @@ import {
     ModalCloseButton,
     useDisclosure,
     Tooltip,
+    Alert,
+    AlertIcon,
+    AlertTitle,
+    AlertDescription,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -49,12 +53,16 @@ import {
     HiOutlineChevronDown,
     HiOutlineChevronUpDown,
     HiOutlineStar,
+    HiOutlineSparkles,
+    HiOutlineCpuChip,
 } from "react-icons/hi2";
 import {
     getDashboard,
     exportCSV,
     archestraAggregateScores,
     getBiasReport,
+    archestraAssignJudges,
+    archestraGetProgress,
 } from "@/lib/api-services";
 
 const MotionBox = motion.create(Box);
@@ -82,13 +90,16 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
 
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [assigning, setAssigning] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [data, setData] = useState<any>(null);
+    const [progressData, setProgressData] = useState<any>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [biasData, setBiasData] = useState<any[]>([]);
 
     useEffect(() => {
         loadDashboard();
+        loadProgress();
     }, [eventId]);
 
     const loadDashboard = async () => {
@@ -104,6 +115,39 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadProgress = async () => {
+        try {
+            const result = await archestraGetProgress(eventId);
+            setProgressData(result);
+        } catch (err) {
+            // Silently fail if progress agent isn't available or fails
+            console.error("Failed to load AI progress report", err);
+        }
+    };
+
+    const handleAutoAssign = async () => {
+        setAssigning(true);
+        try {
+            const result = await archestraAssignJudges(eventId);
+            await loadDashboard();
+            toast({
+                title: "AI Assignment Complete",
+                description: result.message || "Judges have been assigned.",
+                status: "success",
+                duration: 3000,
+            });
+        } catch (err: any) {
+            toast({
+                title: "Assignment failed",
+                description: err.response?.data?.detail || "Could not assign judges.",
+                status: "error",
+                duration: 3000,
+            });
+        } finally {
+            setAssigning(false);
         }
     };
 
@@ -206,6 +250,37 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
 
     return (
         <VStack spacing={8} align="stretch">
+            {/* AI Progress Report */}
+            {progressData && progressData.summary && (
+                <MotionBox
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                    <Alert
+                        status="info"
+                        variant="subtle"
+                        flexDirection="column"
+                        alignItems="flex-start"
+                        justifyContent="center"
+                        textAlign="left"
+                        bg="purple.900"
+                        borderColor="purple.500"
+                        borderWidth="1px"
+                        borderRadius="md"
+                        color="white"
+                        p={4}
+                    >
+                        <HStack spacing={2} mb={2}>
+                            <Icon as={HiOutlineSparkles} color="purple.300" boxSize={5} />
+                            <AlertTitle fontSize="lg">Archestra Status Report</AlertTitle>
+                        </HStack>
+                        <AlertDescription maxWidth="sm" color="whiteAlpha.900">
+                            {progressData.summary}
+                        </AlertDescription>
+                    </Alert>
+                </MotionBox>
+            )}
+
             {/* Stats Cards */}
             <SimpleGrid columns={{ base: 2, lg: 4 }} spacing={6}>
                 <AnimatedStatCard
@@ -245,6 +320,15 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
 
             {/* Actions */}
             <Flex gap={3} wrap="wrap">
+                <Button
+                    leftIcon={<HiOutlineCpuChip />}
+                    colorScheme="purple"
+                    onClick={handleAutoAssign}
+                    isLoading={assigning}
+                    loadingText="Assigning..."
+                >
+                    Auto-Assign Judges (AI)
+                </Button>
                 <Button
                     leftIcon={<HiOutlineArrowDownTray />}
                     colorScheme="gray"
@@ -323,8 +407,8 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
                                                 judge.percent === 100
                                                     ? "green.300"
                                                     : judge.percent > 50
-                                                    ? "blue.300"
-                                                    : "orange.300"
+                                                        ? "blue.300"
+                                                        : "orange.300"
                                             }
                                             fontWeight="bold"
                                             fontSize="sm"
@@ -341,8 +425,8 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
                                         judge.percent === 100
                                             ? "green"
                                             : judge.percent > 50
-                                            ? "blue"
-                                            : "orange"
+                                                ? "blue"
+                                                : "orange"
                                     }
                                     borderRadius="full"
                                     h="8px"
@@ -440,8 +524,8 @@ export function DashboardTab({ eventId }: DashboardTabProps) {
                                                     judge.deviation > 0
                                                         ? "green.300"
                                                         : judge.deviation < 0
-                                                        ? "red.300"
-                                                        : "whiteAlpha.600"
+                                                            ? "red.300"
+                                                            : "whiteAlpha.600"
                                                 }
                                                 fontWeight="bold"
                                             >

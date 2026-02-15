@@ -49,6 +49,23 @@ async def create_submission(
     # Validate form_data against form_fields
     await submission_service.validate_form_data(event_id, body.form_data)
 
+    # Archestra AI Validation (Non-blocking)
+    from app.services.archestra_service import archestra_service
+    import logging
+    
+    # Create a copy of form_data to avoid mutating the input model directly if needed
+    final_form_data = body.form_data.copy()
+    
+    try:
+        validation_result = await archestra_service.validate_submission(final_form_data)
+        # Inject AI validation results into metadata field
+        final_form_data["_ai_validation"] = validation_result
+        if not validation_result.get("valid", True):
+            logging.info(f"Archestra flagged submission in event {event_id} with errors/warnings")
+    except Exception as e:
+        logging.warning(f"Archestra validation failed gracefully: {e}")
+        # Continue without validation data if AI fails
+
     # Insert
     result = (
         supabase.table("submissions")
@@ -56,7 +73,7 @@ async def create_submission(
             {
                 "event_id": event_id,
                 "participant_id": user["id"],
-                "form_data": body.form_data,
+                "form_data": final_form_data,
             }
         )
         .execute()

@@ -25,6 +25,18 @@ import {
     Button,
     useToast,
     Tooltip,
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalCloseButton,
+    ModalFooter,
+    useDisclosure,
+    List,
+    ListItem,
+    ListIcon,
+    Heading,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import {
@@ -33,8 +45,11 @@ import {
     HiOutlineChevronUp,
     HiOutlineArrowDownTray,
     HiOutlineEye,
+    HiOutlineSparkles,
+    HiOutlineCheckCircle,
+    HiOutlineArrowRightCircle,
 } from "react-icons/hi2";
-import { listSubmissions } from "@/lib/api-services";
+import { listSubmissions, archestraGenerateFeedback } from "@/lib/api-services";
 import type { Submission, FormDataDisplayItem } from "@/lib/types";
 
 const MotionBox = motion.create(Box);
@@ -49,6 +64,11 @@ export function SubmissionsTab({ eventId }: SubmissionsTabProps) {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [expandedId, setExpandedId] = useState<string | null>(null);
+
+    // Feedback Modal State
+    const { isOpen, onOpen, onClose } = useDisclosure();
+    const [feedbackLoading, setFeedbackLoading] = useState(false);
+    const [currentFeedback, setCurrentFeedback] = useState<any>(null);
 
     useEffect(() => {
         loadSubmissions();
@@ -66,6 +86,27 @@ export function SubmissionsTab({ eventId }: SubmissionsTabProps) {
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGenerateFeedback = async (submissionId: string) => {
+        setFeedbackLoading(true);
+        setCurrentFeedback(null);
+        onOpen();
+
+        try {
+            const result = await archestraGenerateFeedback(submissionId);
+            setCurrentFeedback(result);
+        } catch (err: any) {
+            toast({
+                title: "Feedback generation failed",
+                description: err.response?.data?.detail || "Could not generate feedback.",
+                status: "error",
+                duration: 3000,
+            });
+            onClose();
+        } finally {
+            setFeedbackLoading(false);
         }
     };
 
@@ -241,11 +282,74 @@ export function SubmissionsTab({ eventId }: SubmissionsTabProps) {
                                 onToggle={() =>
                                     setExpandedId(expandedId === sub.id ? null : sub.id)
                                 }
+                                onGenerateFeedback={() => handleGenerateFeedback(sub.id)}
                             />
                         ))}
                     </Tbody>
                 </Table>
             </Box>
+
+            {/* AI Feedback Modal */}
+            <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
+                <ModalOverlay />
+                <ModalContent bg="gray.800" borderColor="whiteAlpha.200">
+                    <ModalHeader color="white">
+                        <HStack>
+                            <HiOutlineSparkles color="#B794F4" />
+                            <Text>AI Feedback</Text>
+                        </HStack>
+                    </ModalHeader>
+                    <ModalCloseButton color="whiteAlpha.600" />
+                    <ModalBody>
+                        {feedbackLoading ? (
+                            <Center py={10}>
+                                <VStack>
+                                    <Spinner color="purple.400" size="xl" />
+                                    <Text color="whiteAlpha.600" mt={4}>Synthesizing judge reviews...</Text>
+                                </VStack>
+                            </Center>
+                        ) : currentFeedback ? (
+                            <VStack align="stretch" spacing={6}>
+                                <Box>
+                                    <Text color="white" fontWeight="bold" fontSize="lg" mb={2}>Summary</Text>
+                                    <Text color="whiteAlpha.800">{currentFeedback.summary}</Text>
+                                </Box>
+
+                                <Box>
+                                    <Text color="green.300" fontWeight="bold" fontSize="lg" mb={2}>Strengths</Text>
+                                    <List spacing={2}>
+                                        {currentFeedback.strengths.map((str: string, i: number) => (
+                                            <ListItem key={i} color="whiteAlpha.800" display="flex" alignItems="flex-start">
+                                                <ListIcon as={HiOutlineCheckCircle} color="green.400" mt={1} />
+                                                <Text>{str}</Text>
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Box>
+
+                                <Box>
+                                    <Text color="orange.300" fontWeight="bold" fontSize="lg" mb={2}>Areas for Improvement</Text>
+                                    <List spacing={2}>
+                                        {currentFeedback.improvements.map((imp: string, i: number) => (
+                                            <ListItem key={i} color="whiteAlpha.800" display="flex" alignItems="flex-start">
+                                                <ListIcon as={HiOutlineArrowRightCircle} color="orange.400" mt={1} />
+                                                <Text>{imp}</Text>
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Box>
+                            </VStack>
+                        ) : (
+                            <Text color="red.300">Failed to load feedback.</Text>
+                        )}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme="purple" mr={3} onClick={onClose}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </VStack>
     );
 }
@@ -256,12 +360,14 @@ function SubmissionRow({
     previewFields,
     isExpanded,
     onToggle,
+    onGenerateFeedback,
 }: {
     submission: Submission;
     index: number;
     previewFields: FormDataDisplayItem[];
     isExpanded: boolean;
     onToggle: () => void;
+    onGenerateFeedback: () => void;
 }) {
     const display = submission.form_data_display || [];
 
@@ -320,31 +426,55 @@ function SubmissionRow({
                 <Tr>
                     <Td colSpan={previewFields.length + 3} borderColor="whiteAlpha.100" p={0}>
                         <Box bg="whiteAlpha.50" p={4}>
-                            <VStack spacing={3} align="stretch">
-                                {display.map((item) => (
-                                    <HStack
-                                        key={item.field_id}
-                                        justify="space-between"
-                                        align="start"
-                                        py={1}
+                            <VStack spacing={4} align="stretch">
+                                <Box>
+                                    <Heading size="xs" color="whiteAlpha.600" mb={3} textTransform="uppercase" letterSpacing="wide">
+                                        Details
+                                    </Heading>
+                                    <VStack spacing={3} align="stretch">
+                                        {display.map((item) => (
+                                            <HStack
+                                                key={item.field_id}
+                                                justify="space-between"
+                                                align="start"
+                                                py={1}
+                                                borderBottom="1px solid"
+                                                borderColor="whiteAlpha.100"
+                                            >
+                                                <Text
+                                                    color="whiteAlpha.500"
+                                                    fontSize="sm"
+                                                    fontWeight="medium"
+                                                    minW="120px"
+                                                >
+                                                    {item.label}
+                                                </Text>
+                                                <Box flex={1} textAlign="right">
+                                                    <CellValue
+                                                        value={item.value}
+                                                        fieldType={item.field_type}
+                                                        full
+                                                    />
+                                                </Box>
+                                            </HStack>
+                                        ))}
+                                    </VStack>
+                                </Box>
+
+                                <Box pt={2}>
+                                    <Button
+                                        leftIcon={<HiOutlineSparkles />}
+                                        colorScheme="purple"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onGenerateFeedback();
+                                        }}
                                     >
-                                        <Text
-                                            color="whiteAlpha.500"
-                                            fontSize="sm"
-                                            fontWeight="medium"
-                                            minW="120px"
-                                        >
-                                            {item.label}
-                                        </Text>
-                                        <Box flex={1} textAlign="right">
-                                            <CellValue
-                                                value={item.value}
-                                                fieldType={item.field_type}
-                                                full
-                                            />
-                                        </Box>
-                                    </HStack>
-                                ))}
+                                        Generate AI Feedback
+                                    </Button>
+                                </Box>
                             </VStack>
                         </Box>
                     </Td>
