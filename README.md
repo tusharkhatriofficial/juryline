@@ -6,6 +6,8 @@
 Juryline is a modern, production-grade platform designed to fix the broken hackathon judging process. It replaces spreadsheets and manual entry with a streamlined, AI-orchestrated workflow that handles everything from submission ingestion to final leaderboards.
 
 > **Live Demo:** [juryline.vercel.app](https://juryline.vercel.app)
+> 
+> **Demo Video:** [Demo Video Link](https://www.youtube.com/watch?v=UzSS6sAGKWY)
 
 ---
 
