@@ -117,7 +117,11 @@ class ArchestraService:
             "judges_per_submission": judges_per_submission,
         })
         if result and "assignments" in result:
-            return result
+            # If AI returns 0 assignments but we have data, likely a failure/refusal
+            if not result["assignments"] and submissions and judges:
+                logger.warning("Archestra returned 0 assignments. Falling back.")
+            else:
+                return result
         # Fallback
         logger.info("Using fallback round-robin judge assignment")
         return fallback_service.assign_judges_round_robin(
