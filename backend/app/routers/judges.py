@@ -43,70 +43,64 @@ async def invite_judge(
     redirect_url = f"{settings.frontend_url}/auth/confirm?event_id={event_id}"
 
     try:
-        # Step 1: Use generate_link to create the user + get the invite link
-        # (generate_link does NOT send an email — it only returns the link)
-        result = supabase.auth.admin.generate_link({
-            "type": "magiclink",
-            "email": body.email,
-            "options": {
-                "data": {"name": body.name, "role": "judge"},
-                "redirect_to": redirect_url,
-            },
-        })
+        # Check if user already exists by querying profiles (assumes trigger syncs auth.users -> profiles)
+        existing_user = (
+            supabase.table("profiles")
+            .select("id")
+            .eq("email", body.email)
+            .maybe_single()
+            .execute()
+        )
 
-        judge_user_id = result.user.id if result.user else None
-        invite_link = result.properties.action_link if result.properties else None
+        judge_user_id = None
+        
+        if existing_user.data:
+            judge_user_id = existing_user.data["id"]
+        else:
+            # Create user specifically so we get the ID immediately
+            # email_confirm=True avoids sending a "Confirm Email" message if configured
+            try:
+                user_resp = supabase.auth.admin.create_user({
+                    "email": body.email,
+                    "email_confirm": True,
+                    "user_metadata": {"name": body.name, "role": "judge"},
+                })
+                judge_user_id = user_resp.user.id
+            except Exception as e:
+                # If create fails (e.g. race condition), try fetching again
+                logger.warning(f"Create user failed, trying to fetch: {e}")
+                retry_user = supabase.table("profiles").select("id").eq("email", body.email).maybe_single().execute()
+                if retry_user.data:
+                    judge_user_id = retry_user.data["id"]
+                else:
+                    raise HTTPException(status_code=400, detail=f"Failed to create judge account: {e}")
 
         if not judge_user_id:
-            raise HTTPException(status_code=400, detail="Failed to create judge user")
+             raise HTTPException(status_code=400, detail="Could not determine user ID for judge")
 
-        # Step 2: Send a magic link email via Supabase /auth/v1/otp REST API
-        # The Python SDK's invite_user_by_email doesn't work reliably,
-        # but the OTP endpoint sends real emails through Supabase's mailer.
+        # Send Magic Link via standard Supabase SDK (Matches Frontend Logic)
+        # This sends the actual email.
         email_sent = False
         email_error = None
         try:
-            async with httpx.AsyncClient() as client:
-                otp_resp = await client.post(
-                    f"{settings.supabase_url}/auth/v1/otp",
-                    headers={
-                        "apikey": settings.supabase_service_key,
-                        "Authorization": f"Bearer {settings.supabase_service_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "email": body.email,
-                        "options": {
-                            "should_create_user": False,
-                            "data": {"name": body.name, "role": "judge"},
-                            "email_redirect_to": redirect_url,
-                        },
-                    },
-                    timeout=10,
-                )
-                
-                if otp_resp.status_code == 200:
-                    email_sent = True
-                    logger.info(f"Successfully sent magic link email to {body.email}")
-                elif otp_resp.status_code == 429:
-                    email_error = "Rate limit exceeded. Please wait 60 seconds and try again."
-                    logger.warning(f"Rate limit hit when sending email to {body.email}")
-                else:
-                    email_error = f"Email service returned status {otp_resp.status_code}: {otp_resp.text}"
-                    logger.error(f"Failed to send email to {body.email}: {email_error}")
-                    
-        except httpx.TimeoutException:
-            email_error = "Email service timeout. Please try again."
-            logger.error(f"Timeout sending email to {body.email}")
-        except httpx.RequestError as e:
-            email_error = f"Email service connection error: {str(e)}"
-            logger.error(f"Request error sending email to {body.email}: {str(e)}")
+            supabase.auth.sign_in_with_otp({
+                "email": body.email,
+                "options": {
+                    "email_redirect_to": redirect_url,
+                    # We already created the user, or they exist.
+                    # We just want to send the magic link.
+                    "should_create_user": False 
+                }
+            })
+            email_sent = True
+            logger.info(f"Successfully sent magic link to {body.email}")
         except Exception as e:
-            email_error = f"Email sending failed: {str(e)}"
-            logger.error(f"Unexpected error sending email to {body.email}: {str(e)}")
+            # If rate limited, we still record the invite but warn
+            email_error = str(e)
+            logger.error(f"Failed to send magic link to {body.email}: {e}")
 
-        # Check if already invited
-        existing = (
+        # Check if already invited to THIS event
+        existing_invite = (
             supabase.table("event_judges")
             .select("id")
             .eq("event_id", event_id)
@@ -114,10 +108,10 @@ async def invite_judge(
             .execute()
         )
 
-        if existing.data:
+        if existing_invite.data:
             return {
                 "message": "Judge already invited",
-                "invite_link": invite_link,
+                "judge_id": judge_user_id,
                 "email_sent": email_sent,
                 "email_error": email_error,
             }
@@ -131,7 +125,6 @@ async def invite_judge(
 
         return {
             "message": "Judge invited successfully",
-            "invite_link": invite_link,
             "judge_id": judge_user_id,
             "email_sent": email_sent,
             "email_error": email_error,
