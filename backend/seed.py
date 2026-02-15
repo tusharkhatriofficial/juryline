@@ -1,414 +1,306 @@
+
 """
-Juryline — Demo Seed Data
-Seeds demo data into Supabase for hackathon demonstration.
+Juryline — Production Seed Script
+Clears ALL data and creates a realistic, high-volume demo environment.
 
-Creates:
-  - 1 organizer, 2 judges, 3 participants (via Supabase Auth Admin)
-  - 1 event ("AI Hackathon 2025") in "judging" status
-  - 6 form fields (project_name, team_name, description, demo_url, repo_url, pitch_video)
-  - 4 criteria (Innovation, Technical Execution, Design & UX, Impact & Feasibility)
-  - 5 submissions with realistic project data
-  - Judge invitations + assignments
-  - Partial reviews (judge1: 3/5, judge2: 2/5) — leaves room for live demo
+State:
+- 1 Active Event (Target for Demo): "Global AI Hackathon 2026"
+  - 20 Submissions
+  - 3 Judges (Invite Accepted)
+  - Partial Reviews (Leaderboard visible but not finalized)
+- 1 Completed Event: "Design Systems Summit"
+  - 10 Submissions
+  - Fully Reviewed (Winner declared)
+- 1 Draft Event: "Crypto Heist CTF"
+  - No submissions, ready for setup demo
 
-Usage:
-  cd backend
-  python seed.py           # seed demo data
-  python seed.py --clean   # remove all demo data first, then re-seed
+Assets:
+- Real Banners
+- MPL/YouTube Video Links
+
+Run within Docker: docker compose exec backend python seed.py
 """
 
-import os
-import sys
-import json
-import random
-import asyncio
-from datetime import datetime, timezone, timedelta
+import os, sys, uuid, json, random
+from datetime import datetime, timedelta, timezone
 
-# Load .env
-from dotenv import load_dotenv
-load_dotenv()
+# Ensure we can import 'app'
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
 
-from supabase import create_client, Client
+# Try loading .env if not in Docker (optional)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+from supabase import create_client
 
-if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-    print("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in .env")
+# Environment Variables
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SERVICE_KEY  = os.environ.get("SUPABASE_SERVICE_KEY")
+
+if not SUPABASE_URL or not SERVICE_KEY:
+    print("Error: SUPABASE_URL or SUPABASE_SERVICE_KEY not set.")
     sys.exit(1)
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+sb = create_client(SUPABASE_URL, SERVICE_KEY)
 
-# ── Demo Users ──
-DEMO_USERS = [
-    {"email": "organizer@juryline.dev", "name": "Alex Morgan", "role": "organizer"},
-    {"email": "judge1@juryline.dev", "name": "Sam Rivera", "role": "judge"},
-    {"email": "judge2@juryline.dev", "name": "Jordan Lee", "role": "judge"},
-    {"email": "p1@juryline.dev", "name": "Casey Chen", "role": "participant"},
-    {"email": "p2@juryline.dev", "name": "Riley Patel", "role": "participant"},
-    {"email": "p3@juryline.dev", "name": "Morgan Brooks", "role": "participant"},
+# ─── Colors ───
+G = "\033[92m"  # green
+Y = "\033[93m"  # yellow
+B = "\033[1m"   # bold
+X = "\033[0m"   # reset
+
+def log(msg): print(f"  {G}✓{X} {msg}")
+def section(msg): print(f"\n{B}── {msg} ──{X}")
+
+# ─── Assets ───
+BANNER_AI = "https://pub-a76579fd32a3438c969fa3e15cd52614.r2.dev/uploads/bfa5ea23-4f7c-4ece-b206-a695d6f01b67/9ae9ee06-8bd1-4f98-b430-178432d656a8_cover.webp"
+BANNER_DESIGN = "https://pub-a76579fd32a3438c969fa3e15cd52614.r2.dev/uploads/bfa5ea23-4f7c-4ece-b206-a695d6f01b67/0998c328-69d7-43b3-8f8a-a98fbd875453_cover.webp"
+
+VIDEOS = [
+    "https://pub-a76579fd32a3438c969fa3e15cd52614.r2.dev/uploads/6124ec82-1b44-4cb3-9701-b7d386a63464/2d4c55cc-63f4-4ac7-867a-bb57eed6b94d_Eventara%20Demo.mp4"
 ]
 
-# ── Demo Submissions ──
-DEMO_SUBMISSIONS = [
-    {
-        "project_name": "AI Recipe Generator",
-        "team_name": "ByteCooks",
-        "description": "An AI-powered platform that generates personalized recipes based on available ingredients, dietary preferences, and cooking skill level. Uses GPT-4 for creative recipe suggestions and DALL-E for plating visualizations.",
-        "demo_url": "https://ai-recipe-gen.demo.app",
-        "repo_url": "https://github.com/bytecooks/ai-recipe-gen",
-    },
-    {
-        "project_name": "EcoTrack",
-        "team_name": "GreenByte",
-        "description": "A carbon footprint tracker that uses computer vision to scan grocery receipts and calculate the environmental impact of purchases. Provides actionable suggestions to reduce carbon output.",
-        "demo_url": "https://ecotrack.demo.app",
-        "repo_url": "https://github.com/greenbyte/ecotrack",
-    },
-    {
-        "project_name": "StudyBuddy AI",
-        "team_name": "NeuralNotes",
-        "description": "An intelligent study companion that generates flashcards, practice quizzes, and mind maps from uploaded lecture notes and textbook PDFs using RAG and GPT-4.",
-        "demo_url": "https://studybuddy.demo.app",
-        "repo_url": "https://github.com/neuralnotes/studybuddy-ai",
-    },
-    {
-        "project_name": "MediScan",
-        "team_name": "HealthHack",
-        "description": "A mobile app that uses AI to analyze skin conditions from photos, providing preliminary assessments and connecting users with dermatologists. Built with TensorFlow and React Native.",
-        "demo_url": "https://mediscan.demo.app",
-        "repo_url": "https://github.com/healthhack/mediscan",
-    },
-    {
-        "project_name": "CodeReview Bot",
-        "team_name": "DevOps Wizards",
-        "description": "An automated code review assistant that integrates with GitHub PRs to provide actionable feedback on code quality, security vulnerabilities, and performance optimizations using fine-tuned LLMs.",
-        "demo_url": "https://codereview-bot.demo.app",
-        "repo_url": "https://github.com/devopswizards/codereview-bot",
-    },
-]
+# ════════════════════════════════════════════════════════════════
+# 1. CLEANUP
+# ════════════════════════════════════════════════════════════════
+section("Nuking Database")
 
-# ── Demo Criteria ──
-DEMO_CRITERIA = [
-    {"name": "Innovation", "weight": 1.5, "sort_order": 0},
-    {"name": "Technical Execution", "weight": 1.2, "sort_order": 1},
-    {"name": "Design & UX", "weight": 1.0, "sort_order": 2},
-    {"name": "Impact & Feasibility", "weight": 1.3, "sort_order": 3},
-]
+tables = ["reviews", "judge_assignments", "event_judges", "submissions", "criteria", "form_fields", "events", "profiles"]
+for t in tables:
+    sb.table(t).delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+    log(f"Cleared {t}")
 
-# ── Demo Form Fields ──
-DEMO_FORM_FIELDS = [
-    {"label": "Project Name", "field_type": "short_text", "is_required": True, "sort_order": 0, "description": "What is your project called?"},
-    {"label": "Team Name", "field_type": "short_text", "is_required": True, "sort_order": 1, "description": "Your team name"},
-    {"label": "Project Description", "field_type": "long_text", "is_required": True, "sort_order": 2, "description": "Describe your project in detail (500 words max)"},
-    {"label": "Demo URL", "field_type": "url", "is_required": False, "sort_order": 3, "description": "Link to your live demo or prototype"},
-    {"label": "Repository URL", "field_type": "url", "is_required": True, "sort_order": 4, "description": "Link to your source code repository"},
-    {"label": "Pitch Video URL", "field_type": "url", "is_required": False, "sort_order": 5, "description": "Link to your 3-minute pitch video (YouTube, Loom, etc.)"},
-]
+try:
+    users = sb.auth.admin.list_users()
+    for u in users:
+        sb.auth.admin.delete_user(u.id)
+    log(f"Deleted {len(users)} auth users")
+except Exception as e:
+    log(f"Warning: Could not clear auth users (check permissions): {e}")
 
 
-def clean_demo_data():
-    """Remove all demo data (users & cascaded records)."""
-    print("\n🧹 Cleaning existing demo data...")
+# ════════════════════════════════════════════════════════════════
+# 2. USERS
+# ════════════════════════════════════════════════════════════════
+section("Creating Users")
 
-    for user_info in DEMO_USERS:
-        # Find user by email
-        try:
-            users_resp = supabase.auth.admin.list_users()
-            for u in users_resp:
-                # users_resp may be a list or have .users attribute
-                user_list = u if isinstance(u, list) else [u]
-                for user in user_list:
-                    if hasattr(user, 'email') and user.email == user_info["email"]:
-                        uid = user.id
-                        # Delete related data first (cascade may not always apply via API)
-                        try:
-                            supabase.table("reviews").delete().eq("judge_id", uid).execute()
-                        except:
-                            pass
-                        try:
-                            supabase.table("judge_assignments").delete().eq("judge_id", uid).execute()
-                        except:
-                            pass
-                        try:
-                            supabase.table("event_judges").delete().eq("judge_id", uid).execute()
-                        except:
-                            pass
-                        try:
-                            supabase.table("submissions").delete().eq("participant_id", uid).execute()
-                        except:
-                            pass
-                        try:
-                            supabase.table("events").delete().eq("organizer_id", uid).execute()
-                        except:
-                            pass
-                        try:
-                            supabase.table("profiles").delete().eq("id", uid).execute()
-                        except:
-                            pass
-                        try:
-                            supabase.auth.admin.delete_user(uid)
-                        except:
-                            pass
-                        print(f"  🗑️  Removed {user_info['email']} ({uid})")
-        except Exception as e:
-            print(f"  ⚠️  Error cleaning {user_info['email']}: {e}")
+PASSWORD = "Password123!"
 
-    print("✅ Cleanup complete\n")
-
-
-def create_demo_user(email: str, name: str, role: str) -> str:
-    """Create a demo user via Supabase Auth Admin API, return user ID."""
+def create_user(email, name, role):
     try:
-        resp = supabase.auth.admin.create_user({
+        res = sb.auth.admin.create_user({
             "email": email,
-            "password": "demo123",
+            "password": PASSWORD,
             "email_confirm": True,
             "user_metadata": {"name": name, "role": role}
         })
-        uid = resp.user.id
-        print(f"  ✅ Created user: {name} ({email}) → {uid}")
-        return uid
+        return res.user.id
     except Exception as e:
-        # User might already exist — try to find them
-        err_str = str(e)
-        if "already" in err_str.lower() or "duplicate" in err_str.lower():
-            # Look up existing user
-            users_resp = supabase.auth.admin.list_users()
-            for item in users_resp:
-                user_list = item if isinstance(item, list) else [item]
-                for user in user_list:
-                    if hasattr(user, 'email') and user.email == email:
-                        print(f"  ♻️  User exists: {name} ({email}) → {user.id}")
-                        return user.id
-        raise Exception(f"Failed to create {email}: {e}")
-
-
-def seed():
-    """Main seed function."""
-    print("🌱 Seeding Juryline Demo Data...")
-    print("=" * 50)
-
-    # ── 1. Create Users ──
-    print("\n📋 Creating demo users...")
-    user_ids = {}
-    for user_info in DEMO_USERS:
-        uid = create_demo_user(user_info["email"], user_info["name"], user_info["role"])
-        user_ids[user_info["email"]] = uid
-
-    organizer_id = user_ids["organizer@juryline.dev"]
-    judge1_id = user_ids["judge1@juryline.dev"]
-    judge2_id = user_ids["judge2@juryline.dev"]
-    p1_id = user_ids["p1@juryline.dev"]
-    p2_id = user_ids["p2@juryline.dev"]
-    p3_id = user_ids["p3@juryline.dev"]
-
-    # ── 2. Ensure profiles exist ──
-    print("\n👤 Ensuring profiles...")
-    for user_info in DEMO_USERS:
-        uid = user_ids[user_info["email"]]
+        print(f"Error creating {email}: {e}")
+        # Try to find if exists
         try:
-            supabase.table("profiles").upsert({
-                "id": uid,
-                "email": user_info["email"],
-                "name": user_info["name"],
-                "role": user_info["role"],
-            }).execute()
-        except Exception as e:
-            print(f"  ⚠️  Profile upsert for {user_info['email']}: {e}")
-
-    # ── 3. Create Event ──
-    print("\n🎯 Creating event: AI Hackathon 2025...")
-    now = datetime.now(timezone.utc)
-    event_resp = supabase.table("events").insert({
-        "organizer_id": organizer_id,
-        "name": "AI Hackathon 2025",
-        "description": "Build innovative AI-powered solutions that change the world! 48 hours to ideate, build, and pitch your project. Open to all skill levels.",
-        "start_at": (now - timedelta(days=5)).isoformat(),
-        "end_at": (now - timedelta(days=2)).isoformat(),
-        "status": "judging",
-        "judges_per_submission": 2,
-    }).execute()
-    event_id = event_resp.data[0]["id"]
-    print(f"  ✅ Event created: {event_id}")
-
-    # ── 4. Create Form Fields ──
-    print("\n📝 Creating form fields...")
-    for field in DEMO_FORM_FIELDS:
-        field["event_id"] = event_id
-    ff_resp = supabase.table("form_fields").insert(DEMO_FORM_FIELDS).execute()
-    # Build a label→id mapping so submissions use UUIDs as keys
-    field_id_map = {f["label"]: f["id"] for f in ff_resp.data}
-    print(f"  ✅ {len(ff_resp.data)} form fields created")
-
-    # ── 5. Create Criteria ──
-    print("\n⚖️ Creating criteria...")
-    criteria_list = []
-    for c in DEMO_CRITERIA:
-        criteria_list.append({**c, "event_id": event_id})
-    crit_resp = supabase.table("criteria").insert(criteria_list).execute()
-    criteria_ids = [c["id"] for c in crit_resp.data]
-    print(f"  ✅ {len(criteria_ids)} criteria created")
-
-    # ── 6. Create Submissions ──
-    print("\n📦 Creating submissions...")
-    participant_ids = [p1_id, p2_id, p3_id, p1_id, p2_id]
-    # Split 5 submissions across 3 participants (p1 gets 2, p2 gets 2, p3 gets 1)
-    # Actually use unique participant per submission — we have 5 submissions but only 3 participants
-    # Let's just use 3 unique submissions (one per participant) and add 2 more with p1 email variations
-    # Actually the schema has UNIQUE(event_id, participant_id) — so max 1 submission per participant per event
-    # Let's create 3 submissions (one per participant)
-    submission_ids = []
-    for i, (sub_data, pid) in enumerate(zip(DEMO_SUBMISSIONS[:3], [p1_id, p2_id, p3_id])):
-        form_data = {
-            field_id_map["Project Name"]: sub_data["project_name"],
-            field_id_map["Team Name"]: sub_data["team_name"],
-            field_id_map["Project Description"]: sub_data["description"],
-            field_id_map["Demo URL"]: sub_data["demo_url"],
-            field_id_map["Repository URL"]: sub_data["repo_url"],
-        }
-        sub_resp = supabase.table("submissions").insert({
-            "event_id": event_id,
-            "participant_id": pid,
-            "form_data": form_data,
-            "status": "in_review",
-        }).execute()
-        submission_ids.append(sub_resp.data[0]["id"])
-        print(f"  ✅ Submission {i+1}: {sub_data['project_name']} ({sub_data['team_name']})")
-
-    # We also want 5 submissions — create 2 more participants on the fly
-    extra_participants = [
-        {"email": "p4@juryline.dev", "name": "Taylor Swift", "role": "participant"},
-        {"email": "p5@juryline.dev", "name": "Alex Kim", "role": "participant"},
-    ]
-    for j, (ep, sub_data) in enumerate(zip(extra_participants, DEMO_SUBMISSIONS[3:])):
-        ep_id = create_demo_user(ep["email"], ep["name"], ep["role"])
-        try:
-            supabase.table("profiles").upsert({
-                "id": ep_id, "email": ep["email"], "name": ep["name"], "role": ep["role"]
-            }).execute()
+             # This part might fail if profile table cleared but auth user remains
+             pass 
         except:
-            pass
-        form_data = {
-            field_id_map["Project Name"]: sub_data["project_name"],
-            field_id_map["Team Name"]: sub_data["team_name"],
-            field_id_map["Project Description"]: sub_data["description"],
-            field_id_map["Demo URL"]: sub_data["demo_url"],
-            field_id_map["Repository URL"]: sub_data["repo_url"],
-        }
-        sub_resp = supabase.table("submissions").insert({
-            "event_id": event_id,
-            "participant_id": ep_id,
-            "form_data": form_data,
-            "status": "in_review",
-        }).execute()
-        submission_ids.append(sub_resp.data[0]["id"])
-        print(f"  ✅ Submission {4+j}: {sub_data['project_name']} ({sub_data['team_name']})")
+             pass
+        return str(uuid.uuid4())
 
-    print(f"\n  📊 Total submissions: {len(submission_ids)}")
+# Organizer
+ORG_ID = create_user("hello@tusharkhatri.in", "Tushar Khatri", "organizer")
+log(f"Organizer: hello@tusharkhatri.in")
 
-    # ── 7. Invite Judges ──
-    print("\n👨‍⚖️ Inviting judges...")
-    for jid in [judge1_id, judge2_id]:
-        supabase.table("event_judges").insert({
-            "event_id": event_id,
-            "judge_id": jid,
-            "invite_status": "accepted",
-        }).execute()
-    print("  ✅ 2 judges invited and accepted")
+# Judges
+JUDGES = []
+JUDGES.append(create_user("khatritushar420@gmail.com", "Judge Tushar", "judge"))
+JUDGES.append(create_user("khatritushar320@gmail.com", "Judge TK", "judge"))
+JUDGES.append(create_user("alex@juryline.dev", "Alex Rivera", "judge"))
+log(f"Created 3 Judges")
 
-    # ── 8. Create Judge Assignments ──
-    print("\n📋 Assigning submissions to judges...")
-    for sub_id in submission_ids:
-        for jid in [judge1_id, judge2_id]:
-            supabase.table("judge_assignments").insert({
-                "event_id": event_id,
-                "judge_id": jid,
-                "submission_id": sub_id,
-                "status": "pending",
-            }).execute()
-    print(f"  ✅ {len(submission_ids) * 2} assignments created (2 judges × {len(submission_ids)} submissions)")
-
-    # ── 9. Create Partial Reviews ──
-    # Judge 1 reviews first 3 submissions, Judge 2 reviews first 2
-    # This leaves room to demo the judging flow live
-    print("\n📝 Creating partial reviews...")
-
-    def make_scores(criteria_ids: list, quality: str = "good") -> dict:
-        """Generate realistic scores for a given quality level."""
-        ranges = {
-            "excellent": (8, 10),
-            "good": (6, 9),
-            "average": (4, 7),
-            "below_avg": (3, 6),
-        }
-        lo, hi = ranges.get(quality, (5, 8))
-        return {cid: random.randint(lo, hi) for cid in criteria_ids}
-
-    # Judge 1: reviews submissions 0, 1, 2 (3 out of 5)
-    quality_levels = ["excellent", "good", "average", "below_avg", "good"]
-    for i in range(3):
-        scores = make_scores(criteria_ids, quality_levels[i])
-        notes_list = [
-            "Really impressive use of AI APIs. The recipe suggestions were surprisingly creative and the UX is clean.",
-            "Solid technical execution. The CV model works well but the UI could use some polish.",
-            "Interesting concept but the implementation feels unfinished. The quiz generation is buggy.",
-        ]
-        supabase.table("reviews").insert({
-            "submission_id": submission_ids[i],
-            "judge_id": judge1_id,
-            "event_id": event_id,
-            "scores": scores,
-            "notes": notes_list[i],
-        }).execute()
-        # Mark assignment completed
-        supabase.table("judge_assignments").update({"status": "completed"}).eq(
-            "judge_id", judge1_id
-        ).eq("submission_id", submission_ids[i]).execute()
-        print(f"  ✅ Judge 1 reviewed: {DEMO_SUBMISSIONS[i]['project_name']}")
-
-    # Judge 2: reviews submissions 0, 1 (2 out of 5)
-    for i in range(2):
-        quality = "good" if i == 0 else "excellent"
-        scores = make_scores(criteria_ids, quality)
-        notes_list = [
-            "Great project overall. The ingredient detection is accurate. Would love to see meal planning features.",
-            "Outstanding work on the carbon calculation engine. This could have real-world impact.",
-        ]
-        supabase.table("reviews").insert({
-            "submission_id": submission_ids[i],
-            "judge_id": judge2_id,
-            "event_id": event_id,
-            "scores": scores,
-            "notes": notes_list[i],
-        }).execute()
-        supabase.table("judge_assignments").update({"status": "completed"}).eq(
-            "judge_id", judge2_id
-        ).eq("submission_id", submission_ids[i]).execute()
-        print(f"  ✅ Judge 2 reviewed: {DEMO_SUBMISSIONS[i]['project_name']}")
-
-    # ── Summary ──
-    print("\n" + "=" * 50)
-    print("🎉 Seed complete!")
-    print("=" * 50)
-    print(f"\n📊 Summary:")
-    print(f"   • Event: AI Hackathon 2025 (status: judging)")
-    print(f"   • Criteria: {len(criteria_ids)} (Innovation, Tech, Design, Impact)")
-    print(f"   • Submissions: {len(submission_ids)}")
-    print(f"   • Judge 1 (Sam Rivera): 3/{len(submission_ids)} reviewed")
-    print(f"   • Judge 2 (Jordan Lee): 2/{len(submission_ids)} reviewed")
-    print(f"\n🔐 Demo Credentials:")
-    print(f"   Organizer:    organizer@juryline.dev / demo123")
-    print(f"   Judge 1:      judge1@juryline.dev / demo123")
-    print(f"   Judge 2:      judge2@juryline.dev / demo123")
-    print(f"   Participant:  p1@juryline.dev / demo123")
-    print(f"\n💡 What to demo:")
-    print(f"   • Login as organizer → view dashboard, leaderboard, judge progress")
-    print(f"   • Login as judge1 → complete remaining 2 reviews via card UI")
-    print(f"   • Switch back to organizer → see updated scores")
+# Participants
+PARTICIPANTS = []
+p_names = [
+    "Alice Chen", "Bob Smith", "Charlie Kim", "David Lo", "Eva Green", 
+    "Frank Wright", "Grace Ho", "Henry Ford", "Ivy Blue", "Jack Black",
+    "Kevin Hart", "Laura Lin", "Mike Ross", "Nancy Drew", "Oscar Wilde",
+    "Paul Atreides", "Quinn Fabray", "Rachel Green", "Steve Jobs", "Tony Stark"
+]
+for i, name in enumerate(p_names):
+    email = f"p{i+1}@demo.juryline.dev"
+    pid = create_user(email, name, "participant")
+    PARTICIPANTS.append(pid)
+log(f"Created {len(PARTICIPANTS)} Participants")
 
 
-if __name__ == "__main__":
-    if "--clean" in sys.argv:
-        clean_demo_data()
-    seed()
+# ════════════════════════════════════════════════════════════════
+# 3. EVENT 1: GLOBAL AI HACKATHON (MAIN DEMO)
+# ════════════════════════════════════════════════════════════════
+section("Seeding Event 1: Global AI Hackathon")
+
+now = datetime.now(timezone.utc)
+EVENT1_ID = str(uuid.uuid4())
+
+# Create Event
+sb.table("events").insert({
+    "id": EVENT1_ID,
+    "organizer_id": ORG_ID,
+    "name": "Global AI Hackathon 2026",
+    "description": "The world's largest AI build-a-thon. We are looking for agents, LLMs, and computer vision projects that solve real problems.",
+    "start_at": (now - timedelta(days=2)).isoformat(),
+    "end_at": (now + timedelta(days=5)).isoformat(),
+    "status": "judging",
+    "judges_per_submission": 2,
+    "banner_url": BANNER_AI
+}).execute()
+
+# Fields
+fields_e1 = [
+    {"event_id": EVENT1_ID, "label": "Project Name", "field_type": "short_text", "is_required": True, "sort_order": 0},
+    {"event_id": EVENT1_ID, "label": "Tagline", "field_type": "short_text", "is_required": True, "sort_order": 1},
+    {"event_id": EVENT1_ID, "label": "Description", "field_type": "long_text", "is_required": True, "sort_order": 2},
+    {"event_id": EVENT1_ID, "label": "Demo Video", "field_type": "file_upload", "description": "3-minute demo", "is_required": True, "sort_order": 3},
+    {"event_id": EVENT1_ID, "label": "GitHub Repo", "field_type": "url", "is_required": True, "sort_order": 4},
+    {"event_id": EVENT1_ID, "label": "Category", "field_type": "dropdown", "options": json.dumps({"choices": ["Health", "Finance", "Education", "Uncategorized"]}), "is_required": True, "sort_order": 5},
+]
+sb.table("form_fields").insert(fields_e1).execute()
+
+# Criteria
+crit_e1 = [
+    {"event_id": EVENT1_ID, "name": "Innovation", "scale_min": 1, "scale_max": 10, "weight": 2.0, "sort_order": 0},
+    {"event_id": EVENT1_ID, "name": "Technical Complexity", "scale_min": 1, "scale_max": 10, "weight": 1.5, "sort_order": 1},
+    {"event_id": EVENT1_ID, "name": "Business Value", "scale_min": 1, "scale_max": 10, "weight": 1.0, "sort_order": 2},
+]
+c_resp = sb.table("criteria").insert(crit_e1).execute()
+CRITERIA_IDS_E1 = [c["id"] for c in c_resp.data]
+
+# Invite Judges
+for jid in JUDGES:
+    sb.table("event_judges").insert({"event_id": EVENT1_ID, "judge_id": jid, "invite_status": "accepted"}).execute()
+
+# Submissions (20 items)
+projects = [
+    ("EcoScan", "Health", "AI recycling assistant"),
+    ("MediBot", "Health", "Doctor in your pocket"),
+    ("FinWiz", "Finance", "Personal finance AI"),
+    ("LearnX", "Education", "Personalized tutor"),
+    ("CodeGpt", "Uncategorized", "Better coding assistant"),
+    ("SafeWalk", "Health", "Walking companion app"),
+    ("AgriTech", "Uncategorized", "Smart farming sensors"),
+    ("CryptoSafe", "Finance", "Wallet security"),
+    ("LegalEagle", "Uncategorized", "Contract review AI"),
+    ("MusicGen", "Uncategorized", "Generative music"),
+    ("TravelAI", "Uncategorized", "Itinerary planner"),
+    ("ShopSmart", "Uncategorized", "Price comparison"),
+    ("FitLife", "Health", "Workout tracker"),
+    ("MindWell", "Health", "Mental health chatbot"),
+    ("InvestMate", "Finance", "Stock predictor"),
+    ("LangLearn", "Education", "Language practice"),
+    ("HistoryChat", "Education", "Talk to history figures"),
+    ("ArtFlow", "Uncategorized", "Generative art tool"),
+    ("WriteGood", "Uncategorized", "Grammar checker"),
+    ("DataViz", "Uncategorized", "Instant charts")
+]
+
+E1_SUB_IDS = []
+for i, (name, cat, desc) in enumerate(projects):
+    video = VIDEOS[i % len(VIDEOS)]
+    fd = {
+        "Project Name": name,
+        "Tagline": f"The future of {cat}",
+        "Description": f"{desc}. Built with Python and React. Solves key problems in the {cat} industry.",
+        "Demo Video": [video],
+        "GitHub Repo": f"https://github.com/demo/{name.lower()}",
+        "Category": cat
+    }
+    
+    res = sb.table("submissions").insert({
+        "event_id": EVENT1_ID,
+        "participant_id": PARTICIPANTS[i],
+        "status": "submitted",
+        "form_data": json.dumps(fd)
+    }).execute()
+    E1_SUB_IDS.append(res.data[0]["id"])
+
+# Assign & Review (Partial)
+# Judge 1 (User): Assigned 10, Reviewed 5
+# Judge 2: Assigned 10, Reviewed 8
+# Judge 3: Assigned 10, Reviewed 2
+
+# Distribute assignments (Simple round robin manually)
+# J1 gets 0-9, J2 gets 5-14, J3 gets 10-19 (Overlaps ensure multi-reviews)
+assign_map = {
+    JUDGES[0]: list(range(0, 10)),
+    JUDGES[1]: list(range(5, 15)),
+    JUDGES[2]: list(range(10, 20))
+}
+
+for jid, indices in assign_map.items():
+    for idx in indices:
+        sid = E1_SUB_IDS[idx]
+        sb.table("judge_assignments").insert({"event_id": EVENT1_ID, "judge_id": jid, "submission_id": sid, "status": "pending"}).execute()
+
+# Reviews
+# J1 reviews first 5
+for idx in range(0, 5):
+    sid = E1_SUB_IDS[idx]
+    scores = {cid: random.randint(6, 10) for cid in CRITERIA_IDS_E1}
+    sb.table("reviews").insert({"submission_id": sid, "judge_id": JUDGES[0], "event_id": EVENT1_ID, "scores": json.dumps(scores), "notes": "Solid entry."}).execute()
+    sb.table("judge_assignments").update({"status": "completed"}).eq("submission_id", sid).eq("judge_id", JUDGES[0]).execute()
+
+# J2 reviews first 8 assigned (5-12)
+for idx in range(5, 13):
+    sid = E1_SUB_IDS[idx]
+    scores = {cid: random.randint(5, 9) for cid in CRITERIA_IDS_E1}
+    sb.table("reviews").insert({"submission_id": sid, "judge_id": JUDGES[1], "event_id": EVENT1_ID, "scores": json.dumps(scores), "notes": "Nice work."}).execute()
+    sb.table("judge_assignments").update({"status": "completed"}).eq("submission_id", sid).eq("judge_id", JUDGES[1]).execute()
+
+log(f"Seeded 20 subs, assignments, and reviews for Event 1")
+
+
+# ════════════════════════════════════════════════════════════════
+# 4. EVENT 2: DESIGN SUMMIT (COMPLETED)
+# ════════════════════════════════════════════════════════════════
+section("Seeding Event 2: Design Systems Summit")
+EVENT2_ID = str(uuid.uuid4())
+
+sb.table("events").insert({
+    "id": EVENT2_ID,
+    "organizer_id": ORG_ID,
+    "name": "Design Systems Summit",
+    "description": "Celebrating UI excellence.",
+    "start_at": (now - timedelta(days=60)).isoformat(),
+    "end_at": (now - timedelta(days=55)).isoformat(),
+    "status": "closed",
+    "judges_per_submission": 2,
+    "banner_url": BANNER_DESIGN
+}).execute()
+
+# Minimal fields/criteria just to exist
+sb.table("form_fields").insert([{"event_id": EVENT2_ID, "label": "Title", "field_type": "short_text", "is_required": True, "sort_order": 0}]).execute()
+sb.table("criteria").insert([{"event_id": EVENT2_ID, "name": "Beauty", "scale_min": 1, "scale_max": 10, "weight": 1.0, "sort_order": 0}]).execute()
+
+# 5 Submissions, fully reviewed
+for i in range(5):
+    res = sb.table("submissions").insert({
+        "event_id": EVENT2_ID,
+        "participant_id": PARTICIPANTS[i], # Reuse participants
+        "status": "submitted",
+        "form_data": json.dumps({"Title": f"Design Project {i+1}"})
+    }).execute()
+    sid = res.data[0]["id"]
+    # J1 reviewed all
+    sb.table("reviews").insert({"submission_id": sid, "judge_id": JUDGES[0], "event_id": EVENT2_ID, "scores": json.dumps({}), "notes": "Winner candidate."}).execute()
+
+log("Seeded completed event")
+
+
+# ════════════════════════════════════════════════════════════════
+# 5. SUMMARY
+# ════════════════════════════════════════════════════════════════
+section("SEED DONE")
+print(f"Organizer: hello@tusharkhatri.in | {PASSWORD}")
+print(f"Judge:     khatritushar420@gmail.com | {PASSWORD}")

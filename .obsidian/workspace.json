@@ -185,6 +185,8 @@
   },
   "active": "600e2f9e7aa5c738",
   "lastOpenFiles": [
+    "backend/seed.py",
+    "db/migrations/004_add_event_banner.sql",
     "archestra_submission_details.txt",
     "submission_description.txt"
   ]

@@ -43,45 +43,39 @@ async def invite_judge(
     redirect_url = f"{settings.frontend_url}/auth/confirm?event_id={event_id}"
 
     try:
-        # Check if user already exists by querying profiles (assumes trigger syncs auth.users -> profiles)
-        existing_user = (
-            supabase.table("profiles")
-            .select("id")
-            .eq("email", body.email)
-            .maybe_single()
-            .execute()
-        )
-
         judge_user_id = None
-        
-        # Defensive check: if query failed completely
-        if existing_user is None:
-             raise HTTPException(status_code=500, detail="Database query failed: existing_user response is None")
 
-        if existing_user.data:
-            judge_user_id = existing_user.data["id"]
-        else:
-            # Create user specifically so we get the ID immediately
-            # email_confirm=True avoids sending a "Confirm Email" message if configured
-            try:
-                user_resp = supabase.auth.admin.create_user({
-                    "email": body.email,
-                    "email_confirm": True,
-                    "user_metadata": {"name": body.name, "role": "judge"},
-                })
-                judge_user_id = user_resp.user.id
-            except Exception as e:
-                # If create fails (e.g. race condition), try fetching again
-                logger.warning(f"Create user failed, trying to fetch: {e}")
-                retry_user = supabase.table("profiles").select("id").eq("email", body.email).maybe_single().execute()
+        # 1. Try to CREATE the user first (Optimistic approach)
+        try:
+            user_resp = supabase.auth.admin.create_user({
+                "email": body.email,
+                "email_confirm": True,
+                "user_metadata": {"name": body.name, "role": "judge"},
+            })
+            judge_user_id = user_resp.user.id
+            logger.info(f"Created new judge account: {judge_user_id}")
+
+        except Exception as e:
+            # 2. If creation failed, assumes user exists. Fetch ID.
+            logger.info(f"User creation failed (likely exists), fetching profile: {e}")
+            
+            existing_user = (
+                supabase.table("profiles")
+                .select("id")
+                .eq("email", body.email)
+                .maybe_single()
+                .execute()
+            )
+            
+            if existing_user is None:
+                # This handles the specific "NoneType" db crash the user reported
+                raise HTTPException(status_code=500, detail="Database query failed while fetching existing user")
                 
-                if retry_user is None:
-                    raise HTTPException(status_code=500, detail="Database query failed: retry_user response is None")
-                    
-                if retry_user.data:
-                    judge_user_id = retry_user.data["id"]
-                else:
-                    raise HTTPException(status_code=400, detail=f"Failed to create judge account: {e}")
+            if existing_user.data:
+                judge_user_id = existing_user.data["id"]
+            else:
+                # User couldn't be created AND not found in profiles? 
+                raise HTTPException(status_code=500, detail=f"Could not create user and could not find existing profile. Auth error: {e}")
 
         if not judge_user_id:
              raise HTTPException(status_code=400, detail="Could not determine user ID for judge")
