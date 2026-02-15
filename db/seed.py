@@ -1,16 +1,27 @@
-"""
-Juryline — Seed Script
-Clears ALL data and creates fresh demo data with real accounts.
 
-Accounts:
-  Organizer: hello@tusharkhatri.in  (password: Password123!)
-  Judge 1:   khatritushar420@gmail.com
-  Judge 2:   khatritushar320@gmail.com
+"""
+Juryline — Production Seed Script
+Clears ALL data and creates a realistic, high-volume demo environment.
+
+State:
+- 1 Active Event (Target for Demo): "Global AI Hackathon 2026"
+  - 20 Submissions
+  - 3 Judges (Invite Accepted)
+  - Partial Reviews (Leaderboard visible but not finalized)
+- 1 Completed Event: "Design Systems Summit"
+  - 10 Submissions
+  - Fully Reviewed (Winner declared)
+- 1 Draft Event: "Crypto Heist CTF"
+  - No submissions, ready for setup demo
+
+Assets:
+- Real Banners
+- MPL/YouTube Video Links
 
 Run: python db/seed.py
 """
 
-import os, sys, uuid, json
+import os, sys, uuid, json, random
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
@@ -23,38 +34,33 @@ SUPABASE_URL = os.environ["SUPABASE_URL"]
 SERVICE_KEY  = os.environ["SUPABASE_SERVICE_KEY"]
 sb = create_client(SUPABASE_URL, SERVICE_KEY)
 
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:4000")
-
-# ─── Colors for terminal output ───
+# ─── Colors ───
 G = "\033[92m"  # green
 Y = "\033[93m"  # yellow
-R = "\033[91m"  # red
-C = "\033[96m"  # cyan
 B = "\033[1m"   # bold
 X = "\033[0m"   # reset
 
+def log(msg): print(f"  {G}✓{X} {msg}")
+def section(msg): print(f"\n{B}── {msg} ──{X}")
 
-def log(msg):
-    print(f"  {G}✓{X} {msg}")
+# ─── Assets ───
+BANNER_AI = "https://pub-a76579fd32a3438c969fa3e15cd52614.r2.dev/uploads/bfa5ea23-4f7c-4ece-b206-a695d6f01b67/9ae9ee06-8bd1-4f98-b430-178432d656a8_cover.webp"
+BANNER_DESIGN = "https://pub-a76579fd32a3438c969fa3e15cd52614.r2.dev/uploads/bfa5ea23-4f7c-4ece-b206-a695d6f01b67/0998c328-69d7-43b3-8f8a-a98fbd875453_cover.webp"
 
-def section(msg):
-    print(f"\n{B}{C}── {msg} ──{X}")
-
+VIDEOS = [
+    "https://pub-a76579fd32a3438c969fa3e15cd52614.r2.dev/uploads/6124ec82-1b44-4cb3-9701-b7d386a63464/2d4c55cc-63f4-4ac7-867a-bb57eed6b94d_Eventara%20Demo.mp4"
+]
 
 # ════════════════════════════════════════════════════════════════
-# 1. NUKE EVERYTHING
+# 1. CLEANUP
 # ════════════════════════════════════════════════════════════════
-section("Clearing all existing data")
+section("Nuking Database")
 
-# Delete in FK-safe order
-for table in [
-    "reviews", "judge_assignments", "event_judges",
-    "submissions", "criteria", "form_fields", "events", "profiles",
-]:
-    sb.table(table).delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
-    log(f"Cleared {table}")
+tables = ["reviews", "judge_assignments", "event_judges", "submissions", "criteria", "form_fields", "events", "profiles"]
+for t in tables:
+    sb.table(t).delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+    log(f"Cleared {t}")
 
-# Delete all auth users
 users = sb.auth.admin.list_users()
 for u in users:
     sb.auth.admin.delete_user(u.id)
@@ -62,494 +68,216 @@ log(f"Deleted {len(users)} auth users")
 
 
 # ════════════════════════════════════════════════════════════════
-# 2. CREATE ACCOUNTS
+# 2. USERS
 # ════════════════════════════════════════════════════════════════
-section("Creating accounts")
+section("Creating Users")
 
 PASSWORD = "Password123!"
 
+def create_user(email, name, role):
+    try:
+        res = sb.auth.admin.create_user({
+            "email": email,
+            "password": PASSWORD,
+            "email_confirm": True,
+            "user_metadata": {"name": name, "role": role}
+        })
+        return res.user.id
+    except Exception as e:
+        print(f"Error creating {email}: {e}")
+        return str(uuid.uuid4())
+
 # Organizer
-org_resp = sb.auth.admin.create_user({
-    "email": "hello@tusharkhatri.in",
-    "password": PASSWORD,
-    "email_confirm": True,
-    "user_metadata": {"name": "Tushar Khatri", "role": "organizer"},
-})
-ORGANIZER_ID = org_resp.user.id
-log(f"Organizer: hello@tusharkhatri.in  (id: {ORGANIZER_ID})")
+ORG_ID = create_user("hello@tusharkhatri.in", "Tushar Khatri", "organizer")
+log(f"Organizer: hello@tusharkhatri.in")
 
-# Judge 1
-j1_resp = sb.auth.admin.create_user({
-    "email": "khatritushar420@gmail.com",
-    "password": PASSWORD,
-    "email_confirm": True,
-    "user_metadata": {"name": "Tushar K. (Judge)", "role": "judge"},
-})
-JUDGE1_ID = j1_resp.user.id
-log(f"Judge 1:   khatritushar420@gmail.com  (id: {JUDGE1_ID})")
+# Judges
+JUDGES = []
+JUDGES.append(create_user("khatritushar420@gmail.com", "Judge Tushar", "judge"))
+JUDGES.append(create_user("khatritushar320@gmail.com", "Judge TK", "judge"))
+JUDGES.append(create_user("alex@juryline.dev", "Alex Rivera", "judge"))
+log(f"Created 3 Judges")
 
-# Judge 2
-j2_resp = sb.auth.admin.create_user({
-    "email": "khatritushar320@gmail.com",
-    "password": PASSWORD,
-    "email_confirm": True,
-    "user_metadata": {"name": "TK Reviews (Judge)", "role": "judge"},
-})
-JUDGE2_ID = j2_resp.user.id
-log(f"Judge 2:   khatritushar320@gmail.com  (id: {JUDGE2_ID})")
-
-# 5 Participants
+# Participants
 PARTICIPANTS = []
-participant_data = [
-    ("alice@demo.juryline.dev",   "Alice Chen",     "participant"),
-    ("bob@demo.juryline.dev",     "Bob Martinez",    "participant"),
-    ("carol@demo.juryline.dev",   "Carol Okonkwo",   "participant"),
-    ("dan@demo.juryline.dev",     "Dan Park",        "participant"),
-    ("emma@demo.juryline.dev",    "Emma Singh",      "participant"),
+p_names = [
+    "Alice Chen", "Bob Smith", "Charlie Kim", "David Lo", "Eva Green", 
+    "Frank Wright", "Grace Ho", "Henry Ford", "Ivy Blue", "Jack Black",
+    "Kevin Hart", "Laura Lin", "Mike Ross", "Nancy Drew", "Oscar Wilde",
+    "Paul Atreides", "Quinn Fabray", "Rachel Green", "Steve Jobs", "Tony Stark"
 ]
-for email, name, role in participant_data:
-    resp = sb.auth.admin.create_user({
-        "email": email,
-        "password": PASSWORD,
-        "email_confirm": True,
-        "user_metadata": {"name": name, "role": role},
-    })
-    PARTICIPANTS.append(resp.user.id)
-    log(f"Participant: {email}")
+for i, name in enumerate(p_names):
+    email = f"p{i+1}@demo.juryline.dev"
+    pid = create_user(email, name, "participant")
+    PARTICIPANTS.append(pid)
+log(f"Created {len(PARTICIPANTS)} Participants")
 
 
 # ════════════════════════════════════════════════════════════════
-# 3. CREATE EVENTS
+# 3. EVENT 1: GLOBAL AI HACKATHON (MAIN DEMO)
 # ════════════════════════════════════════════════════════════════
-section("Creating events")
+section("Seeding Event 1: Global AI Hackathon")
 
 now = datetime.now(timezone.utc)
-
-# Event 1: HackSphere 2026 — Open for submissions
 EVENT1_ID = str(uuid.uuid4())
+
+# Create Event
 sb.table("events").insert({
     "id": EVENT1_ID,
-    "organizer_id": str(ORGANIZER_ID),
-    "name": "HackSphere 2026",
-    "description": "A 48-hour global hackathon challenging teams to build AI-powered solutions for sustainable cities. Open to all skill levels — prizes include $10K, mentorship, and cloud credits.",
+    "organizer_id": ORG_ID,
+    "name": "Global AI Hackathon 2026",
+    "description": "The world's largest AI build-a-thon. We are looking for agents, LLMs, and computer vision projects that solve real problems.",
     "start_at": (now - timedelta(days=2)).isoformat(),
     "end_at": (now + timedelta(days=5)).isoformat(),
-    "status": "open",
-    "judges_per_submission": 2,
-}).execute()
-log(f"Event: HackSphere 2026 (open)")
-
-# Event 2: DesignJam Spring — In judging phase
-EVENT2_ID = str(uuid.uuid4())
-sb.table("events").insert({
-    "id": EVENT2_ID,
-    "organizer_id": str(ORGANIZER_ID),
-    "name": "DesignJam Spring",
-    "description": "A 24-hour design sprint where UI/UX designers reimagine everyday apps. Submissions are judged on creativity, usability, and visual polish.",
-    "start_at": (now - timedelta(days=10)).isoformat(),
-    "end_at": (now - timedelta(days=3)).isoformat(),
     "status": "judging",
     "judges_per_submission": 2,
+    "banner_url": BANNER_AI
 }).execute()
-log(f"Event: DesignJam Spring (judging)")
 
-# Event 3: CodeVault CTF — Draft
-EVENT3_ID = str(uuid.uuid4())
-sb.table("events").insert({
-    "id": EVENT3_ID,
-    "organizer_id": str(ORGANIZER_ID),
-    "name": "CodeVault CTF 2026",
-    "description": "Capture-the-flag cybersecurity competition. Solve challenges across web exploitation, reverse engineering, cryptography, and forensics. Top 3 teams win hardware prizes.",
-    "start_at": (now + timedelta(days=30)).isoformat(),
-    "end_at": (now + timedelta(days=32)).isoformat(),
-    "status": "draft",
-    "judges_per_submission": 3,
-}).execute()
-log(f"Event: CodeVault CTF 2026 (draft)")
-
-
-# ════════════════════════════════════════════════════════════════
-# 4. FORM FIELDS
-# ════════════════════════════════════════════════════════════════
-section("Creating form fields")
-
-# ── HackSphere 2026 fields ──
-hacksphere_fields = [
-    {
-        "event_id": EVENT1_ID, "sort_order": 0,
-        "label": "Project Name",
-        "field_type": "short_text",
-        "description": "Give your project a catchy name",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT1_ID, "sort_order": 1,
-        "label": "Team Members",
-        "field_type": "short_text",
-        "description": "List all team members (comma-separated)",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT1_ID, "sort_order": 2,
-        "label": "Project Description",
-        "field_type": "long_text",
-        "description": "Describe what your project does, the problem it solves, and your tech stack (200 words max)",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT1_ID, "sort_order": 3,
-        "label": "Demo Video URL",
-        "field_type": "url",
-        "description": "Link to a 3-minute demo video (YouTube, Loom, etc.)",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT1_ID, "sort_order": 4,
-        "label": "GitHub Repository",
-        "field_type": "url",
-        "description": "Link to your public repo",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT1_ID, "sort_order": 5,
-        "label": "Category",
-        "field_type": "dropdown",
-        "description": "Select the category that best fits your project",
-        "is_required": True,
-        "options": json.dumps({"choices": ["AI/ML", "IoT & Hardware", "Green Energy", "Smart Mobility", "Health & Wellbeing", "Other"]}),
-    },
-    {
-        "event_id": EVENT1_ID, "sort_order": 6,
-        "label": "Pitch Deck",
-        "field_type": "file_upload",
-        "description": "Upload your pitch deck (PDF, max 10 MB)",
-        "is_required": False,
-    },
-    {
-        "event_id": EVENT1_ID, "sort_order": 7,
-        "label": "Anything else?",
-        "field_type": "long_text",
-        "description": "Optional — share anything the judges should know",
-        "is_required": False,
-    },
+# Fields
+fields_e1 = [
+    {"event_id": EVENT1_ID, "label": "Project Name", "field_type": "short_text", "is_required": True, "sort_order": 0},
+    {"event_id": EVENT1_ID, "label": "Tagline", "field_type": "short_text", "is_required": True, "sort_order": 1},
+    {"event_id": EVENT1_ID, "label": "Description", "field_type": "long_text", "is_required": True, "sort_order": 2},
+    {"event_id": EVENT1_ID, "label": "Demo Video", "field_type": "file_upload", "description": "3-minute demo", "is_required": True, "sort_order": 3},
+    {"event_id": EVENT1_ID, "label": "GitHub Repo", "field_type": "url", "is_required": True, "sort_order": 4},
+    {"event_id": EVENT1_ID, "label": "Category", "field_type": "dropdown", "options": json.dumps({"choices": ["Health", "Finance", "Education", "Uncategorized"]}), "is_required": True, "sort_order": 5},
 ]
-sb.table("form_fields").insert(hacksphere_fields).execute()
-log(f"HackSphere 2026 — {len(hacksphere_fields)} fields")
+sb.table("form_fields").insert(fields_e1).execute()
 
-# ── DesignJam Spring fields ──
-designjam_fields = [
-    {
-        "event_id": EVENT2_ID, "sort_order": 0,
-        "label": "Design Title",
-        "field_type": "short_text",
-        "description": "Name your redesign concept",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT2_ID, "sort_order": 1,
-        "label": "Original App Redesigned",
-        "field_type": "dropdown",
-        "description": "Which app did you redesign?",
-        "is_required": True,
-        "options": json.dumps({"choices": ["Spotify", "Instagram", "Google Maps", "Slack", "Notion", "Other"]}),
-    },
-    {
-        "event_id": EVENT2_ID, "sort_order": 2,
-        "label": "Design Rationale",
-        "field_type": "long_text",
-        "description": "Explain your design decisions, user research, and key improvements",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT2_ID, "sort_order": 3,
-        "label": "Figma / Prototype Link",
-        "field_type": "url",
-        "description": "Link to your interactive prototype",
-        "is_required": True,
-    },
-    {
-        "event_id": EVENT2_ID, "sort_order": 4,
-        "label": "Design Mockups",
-        "field_type": "file_upload",
-        "description": "Upload key screens as images or PDF",
-        "is_required": False,
-    },
-    {
-        "event_id": EVENT2_ID, "sort_order": 5,
-        "label": "Confidence Level",
-        "field_type": "linear_scale",
-        "description": "How confident are you this design improves the original?",
-        "is_required": True,
-        "options": json.dumps({"min": 1, "max": 10, "min_label": "Not sure", "max_label": "Extremely confident"}),
-    },
+# Criteria
+crit_e1 = [
+    {"event_id": EVENT1_ID, "name": "Innovation", "scale_min": 1, "scale_max": 10, "weight": 2.0, "sort_order": 0},
+    {"event_id": EVENT1_ID, "name": "Technical Complexity", "scale_min": 1, "scale_max": 10, "weight": 1.5, "sort_order": 1},
+    {"event_id": EVENT1_ID, "name": "Business Value", "scale_min": 1, "scale_max": 10, "weight": 1.0, "sort_order": 2},
 ]
-sb.table("form_fields").insert(designjam_fields).execute()
-log(f"DesignJam Spring — {len(designjam_fields)} fields")
+c_resp = sb.table("criteria").insert(crit_e1).execute()
+CRITERIA_IDS_E1 = [c["id"] for c in c_resp.data]
 
+# Invite Judges
+for jid in JUDGES:
+    sb.table("event_judges").insert({"event_id": EVENT1_ID, "judge_id": jid, "invite_status": "accepted"}).execute()
 
-# ════════════════════════════════════════════════════════════════
-# 5. CRITERIA
-# ════════════════════════════════════════════════════════════════
-section("Creating judging criteria")
-
-# ── HackSphere criteria ──
-hs_criteria = [
-    {"event_id": EVENT1_ID, "name": "Innovation",        "scale_min": 0, "scale_max": 10, "weight": 1.5, "sort_order": 0},
-    {"event_id": EVENT1_ID, "name": "Technical Depth",    "scale_min": 0, "scale_max": 10, "weight": 1.2, "sort_order": 1},
-    {"event_id": EVENT1_ID, "name": "Impact & Feasibility","scale_min": 0, "scale_max": 10, "weight": 1.0, "sort_order": 2},
-    {"event_id": EVENT1_ID, "name": "Presentation Quality","scale_min": 0, "scale_max": 10, "weight": 0.8, "sort_order": 3},
-    {"event_id": EVENT1_ID, "name": "Code Quality",       "scale_min": 0, "scale_max": 10, "weight": 1.0, "sort_order": 4},
-]
-hs_criteria_resp = sb.table("criteria").insert(hs_criteria).execute()
-HS_CRITERIA_IDS = [c["id"] for c in hs_criteria_resp.data]
-log(f"HackSphere 2026 — {len(hs_criteria)} criteria")
-
-# ── DesignJam criteria ──
-dj_criteria = [
-    {"event_id": EVENT2_ID, "name": "Creativity & Originality", "scale_min": 0, "scale_max": 10, "weight": 1.5, "sort_order": 0},
-    {"event_id": EVENT2_ID, "name": "Usability & UX",           "scale_min": 0, "scale_max": 10, "weight": 1.3, "sort_order": 1},
-    {"event_id": EVENT2_ID, "name": "Visual Design",            "scale_min": 0, "scale_max": 10, "weight": 1.0, "sort_order": 2},
-    {"event_id": EVENT2_ID, "name": "Design Rationale",         "scale_min": 0, "scale_max": 10, "weight": 0.8, "sort_order": 3},
-]
-dj_criteria_resp = sb.table("criteria").insert(dj_criteria).execute()
-DJ_CRITERIA_IDS = [c["id"] for c in dj_criteria_resp.data]
-log(f"DesignJam Spring — {len(dj_criteria)} criteria")
-
-
-# ════════════════════════════════════════════════════════════════
-# 6. INVITE JUDGES
-# ════════════════════════════════════════════════════════════════
-section("Inviting judges to events")
-
-# Both judges → HackSphere (accepted)
-sb.table("event_judges").insert([
-    {"event_id": EVENT1_ID, "judge_id": str(JUDGE1_ID), "invite_status": "accepted"},
-    {"event_id": EVENT1_ID, "judge_id": str(JUDGE2_ID), "invite_status": "accepted"},
-]).execute()
-log("HackSphere 2026 — 2 judges (accepted)")
-
-# Both judges → DesignJam (accepted)
-sb.table("event_judges").insert([
-    {"event_id": EVENT2_ID, "judge_id": str(JUDGE1_ID), "invite_status": "accepted"},
-    {"event_id": EVENT2_ID, "judge_id": str(JUDGE2_ID), "invite_status": "accepted"},
-]).execute()
-log("DesignJam Spring — 2 judges (accepted)")
-
-
-# ════════════════════════════════════════════════════════════════
-# 7. SUBMISSIONS (HackSphere — 5 projects)
-# ════════════════════════════════════════════════════════════════
-section("Creating submissions for HackSphere 2026")
-
-hacksphere_submissions = [
-    {
-        "project": "EcoRoute AI",
-        "team": "Alice Chen, Marcus Liu",
-        "desc": "An AI-powered route optimizer that reduces carbon emissions by suggesting greener commute paths. Uses real-time traffic, weather, and public transit data to find the most eco-friendly route. Built with Python, FastAPI, React, and OpenAI API. Reduces average commute emissions by 23%.",
-        "video": "https://youtube.com/watch?v=demo-ecoroute",
-        "repo": "https://github.com/alice-chen/ecoroute-ai",
-        "category": "Smart Mobility",
-    },
-    {
-        "project": "MediScan",
-        "team": "Bob Martinez, Priya Sharma, Leo Wang",
-        "desc": "Mobile-first app that uses computer vision to identify medication from photos and provides dosage info, interactions, and side effects in plain language. Aimed at elderly users and caregivers. Built with React Native, TensorFlow Lite, and a custom pharma knowledge graph.",
-        "video": "https://youtube.com/watch?v=demo-mediscan",
-        "repo": "https://github.com/bob-dev/mediscan",
-        "category": "Health & Wellbeing",
-    },
-    {
-        "project": "GridShare",
-        "team": "Carol Okonkwo, James Nkemelu",
-        "desc": "A peer-to-peer energy trading platform for neighborhoods with solar panels. Residents can sell excess solar energy to neighbors at fair prices. Uses blockchain-based smart contracts on Polygon for transparent billing. Dashboard shows real-time generation and consumption.",
-        "video": "https://youtube.com/watch?v=demo-gridshare",
-        "repo": "https://github.com/carol-labs/gridshare",
-        "category": "Green Energy",
-    },
-    {
-        "project": "SensorHive",
-        "team": "Dan Park, Yuki Tanaka",
-        "desc": "Low-cost IoT air quality monitoring network for schools. Raspberry Pi-based sensors measure PM2.5, CO2, humidity, and temperature. Data streams to a Next.js dashboard with alerts for teachers when air quality drops below safe levels. Already piloted in 3 schools in Seoul.",
-        "video": "https://youtube.com/watch?v=demo-sensorhive",
-        "repo": "https://github.com/danpark/sensorhive",
-        "category": "IoT & Hardware",
-    },
-    {
-        "project": "UrbanMind",
-        "team": "Emma Singh, Fatima Al-Rashid, Noah Kim",
-        "desc": "AI city planner that generates optimized urban layouts from satellite imagery and demographic data. Uses GANs to propose zoning changes that maximize green space while maintaining walkability. Evaluated against 50 real city districts with a 31% improvement in green coverage.",
-        "video": "https://youtube.com/watch?v=demo-urbanmind",
-        "repo": "https://github.com/emma-s/urbanmind",
-        "category": "AI/ML",
-    },
+# Submissions (20 items)
+projects = [
+    ("EcoScan", "Health", "AI recycling assistant"),
+    ("MediBot", "Health", "Doctor in your pocket"),
+    ("FinWiz", "Finance", "Personal finance AI"),
+    ("LearnX", "Education", "Personalized tutor"),
+    ("CodeGpt", "Uncategorized", "Better coding assistant"),
+    ("SafeWalk", "Health", "Walking companion app"),
+    ("AgriTech", "Uncategorized", "Smart farming sensors"),
+    ("CryptoSafe", "Finance", "Wallet security"),
+    ("LegalEagle", "Uncategorized", "Contract review AI"),
+    ("MusicGen", "Uncategorized", "Generative music"),
+    ("TravelAI", "Uncategorized", "Itinerary planner"),
+    ("ShopSmart", "Uncategorized", "Price comparison"),
+    ("FitLife", "Health", "Workout tracker"),
+    ("MindWell", "Health", "Mental health chatbot"),
+    ("InvestMate", "Finance", "Stock predictor"),
+    ("LangLearn", "Education", "Language practice"),
+    ("HistoryChat", "Education", "Talk to history figures"),
+    ("ArtFlow", "Uncategorized", "Generative art tool"),
+    ("WriteGood", "Uncategorized", "Grammar checker"),
+    ("DataViz", "Uncategorized", "Instant charts")
 ]
 
-HS_SUBMISSION_IDS = []
-for i, s in enumerate(hacksphere_submissions):
-    sub_id = str(uuid.uuid4())
-    HS_SUBMISSION_IDS.append(sub_id)
-    sb.table("submissions").insert({
-        "id": sub_id,
+E1_SUB_IDS = []
+for i, (name, cat, desc) in enumerate(projects):
+    video = VIDEOS[i % len(VIDEOS)]
+    fd = {
+        "Project Name": name,
+        "Tagline": f"The future of {cat}",
+        "Description": f"{desc}. Built with Python and React. Solves key problems in the {cat} industry.",
+        "Demo Video": [video],
+        "GitHub Repo": f"https://github.com/demo/{name.lower()}",
+        "Category": cat
+    }
+    
+    res = sb.table("submissions").insert({
         "event_id": EVENT1_ID,
-        "participant_id": str(PARTICIPANTS[i]),
-        "form_data": json.dumps({
-            "Project Name": s["project"],
-            "Team Members": s["team"],
-            "Project Description": s["desc"],
-            "Demo Video URL": s["video"],
-            "GitHub Repository": s["repo"],
-            "Category": s["category"],
-        }),
+        "participant_id": PARTICIPANTS[i],
         "status": "submitted",
+        "form_data": json.dumps(fd)
     }).execute()
-    log(f"{s['project']} — by {s['team'].split(',')[0].strip()}")
+    E1_SUB_IDS.append(res.data[0]["id"])
+
+# Assign & Review (Partial)
+# Judge 1 (User): Assigned 10, Reviewed 5
+# Judge 2: Assigned 10, Reviewed 8
+# Judge 3: Assigned 10, Reviewed 2
+
+# Distribute assignments (Simple round robin manually)
+# J1 gets 0-9, J2 gets 5-14, J3 gets 10-19 (Overlaps ensure multi-reviews)
+assign_map = {
+    JUDGES[0]: list(range(0, 10)),
+    JUDGES[1]: list(range(5, 15)),
+    JUDGES[2]: list(range(10, 20))
+}
+
+for jid, indices in assign_map.items():
+    for idx in indices:
+        sid = E1_SUB_IDS[idx]
+        sb.table("judge_assignments").insert({"event_id": EVENT1_ID, "judge_id": jid, "submission_id": sid, "status": "pending"}).execute()
+
+# Reviews
+# J1 reviews first 5
+for idx in range(0, 5):
+    sid = E1_SUB_IDS[idx]
+    scores = {cid: random.randint(6, 10) for cid in CRITERIA_IDS_E1}
+    sb.table("reviews").insert({"submission_id": sid, "judge_id": JUDGES[0], "event_id": EVENT1_ID, "scores": json.dumps(scores), "notes": "Solid entry."}).execute()
+    sb.table("judge_assignments").update({"status": "completed"}).eq("submission_id", sid).eq("judge_id", JUDGES[0]).execute()
+
+# J2 reviews first 8 assigned (5-12)
+for idx in range(5, 13):
+    sid = E1_SUB_IDS[idx]
+    scores = {cid: random.randint(5, 9) for cid in CRITERIA_IDS_E1}
+    sb.table("reviews").insert({"submission_id": sid, "judge_id": JUDGES[1], "event_id": EVENT1_ID, "scores": json.dumps(scores), "notes": "Nice work."}).execute()
+    sb.table("judge_assignments").update({"status": "completed"}).eq("submission_id", sid).eq("judge_id", JUDGES[1]).execute()
+
+log(f"Seeded 20 subs, assignments, and reviews for Event 1")
 
 
 # ════════════════════════════════════════════════════════════════
-# 8. SUBMISSIONS (DesignJam — 4 projects)
+# 4. EVENT 2: DESIGN SUMMIT (COMPLETED)
 # ════════════════════════════════════════════════════════════════
-section("Creating submissions for DesignJam Spring")
+section("Seeding Event 2: Design Systems Summit")
+EVENT2_ID = str(uuid.uuid4())
 
-designjam_submissions = [
-    {
-        "title": "Spotify Flow",
-        "app": "Spotify",
-        "rationale": "Redesigned the queue and playlist management to feel more tactile and visual. Introduced a 'mood board' view that clusters songs by energy and vibe rather than just a flat list. Added gesture-based controls for quicker navigation while driving.",
-        "figma": "https://figma.com/file/spotify-flow-demo",
-        "confidence": 8,
-    },
-    {
-        "title": "MapSense",
-        "app": "Google Maps",
-        "rationale": "Focused on accessibility — redesigned the navigation UI for visually impaired users. Larger touch targets, high-contrast mode by default, haptic feedback at each turn, and audio descriptions of surroundings pulled from Street View metadata.",
-        "figma": "https://figma.com/file/mapsense-demo",
-        "confidence": 9,
-    },
-    {
-        "title": "InstaCreate",
-        "app": "Instagram",
-        "rationale": "Reimagined the content creation flow for small business owners. Added built-in product tagging templates, scheduling calendar, and analytics dashboard right in the creation screen. Reduced steps to publish a shoppable post from 7 to 3.",
-        "figma": "https://figma.com/file/instacreate-demo",
-        "confidence": 7,
-    },
-    {
-        "title": "SlackZen",
-        "app": "Slack",
-        "rationale": "Tackled notification overload by adding an AI-powered 'Focus Mode' that batches and summarizes conversations. Introduced a calm UI theme with softer colors and reduced visual noise. Thread summaries appear as sticky cards instead of nested messages.",
-        "figma": "https://figma.com/file/slackzen-demo",
-        "confidence": 8,
-    },
-]
+sb.table("events").insert({
+    "id": EVENT2_ID,
+    "organizer_id": ORG_ID,
+    "name": "Design Systems Summit",
+    "description": "Celebrating UI excellence.",
+    "start_at": (now - timedelta(days=60)).isoformat(),
+    "end_at": (now - timedelta(days=55)).isoformat(),
+    "status": "closed",
+    "judges_per_submission": 2,
+    "banner_url": BANNER_DESIGN
+}).execute()
 
-DJ_SUBMISSION_IDS = []
-for i, s in enumerate(designjam_submissions):
-    sub_id = str(uuid.uuid4())
-    DJ_SUBMISSION_IDS.append(sub_id)
-    sb.table("submissions").insert({
-        "id": sub_id,
+# Minimal fields/criteria just to exist
+sb.table("form_fields").insert([{"event_id": EVENT2_ID, "label": "Title", "field_type": "short_text", "is_required": True, "sort_order": 0}]).execute()
+sb.table("criteria").insert([{"event_id": EVENT2_ID, "name": "Beauty", "scale_min": 1, "scale_max": 10, "weight": 1.0, "sort_order": 0}]).execute()
+
+# 5 Submissions, fully reviewed
+for i in range(5):
+    res = sb.table("submissions").insert({
         "event_id": EVENT2_ID,
-        "participant_id": str(PARTICIPANTS[i]),
-        "form_data": json.dumps({
-            "Design Title": s["title"],
-            "Original App Redesigned": s["app"],
-            "Design Rationale": s["rationale"],
-            "Figma / Prototype Link": s["figma"],
-            "Confidence Level": s["confidence"],
-        }),
-        "status": "in_review",
+        "participant_id": PARTICIPANTS[i], # Reuse participants
+        "status": "submitted",
+        "form_data": json.dumps({"Title": f"Design Project {i+1}"})
     }).execute()
-    log(f"{s['title']} — redesign of {s['app']}")
+    sid = res.data[0]["id"]
+    # J1 reviewed all
+    sb.table("reviews").insert({"submission_id": sid, "judge_id": JUDGES[0], "event_id": EVENT2_ID, "scores": json.dumps({}), "notes": "Winner candidate."}).execute()
+
+log("Seeded completed event")
 
 
 # ════════════════════════════════════════════════════════════════
-# 9. JUDGE ASSIGNMENTS (DesignJam — "judging" phase)
+# 5. SUMMARY
 # ════════════════════════════════════════════════════════════════
-section("Creating judge assignments for DesignJam Spring")
-
-for sub_id in DJ_SUBMISSION_IDS:
-    sb.table("judge_assignments").insert([
-        {"event_id": EVENT2_ID, "judge_id": str(JUDGE1_ID), "submission_id": sub_id, "status": "pending"},
-        {"event_id": EVENT2_ID, "judge_id": str(JUDGE2_ID), "submission_id": sub_id, "status": "pending"},
-    ]).execute()
-log(f"Assigned {len(DJ_SUBMISSION_IDS)} submissions × 2 judges = {len(DJ_SUBMISSION_IDS)*2} assignments")
-
-
-# ════════════════════════════════════════════════════════════════
-# 10. REVIEWS (DesignJam — Judge 1 has reviewed 2 submissions)
-# ════════════════════════════════════════════════════════════════
-section("Creating sample reviews for DesignJam Spring")
-
-# Judge 1 reviewed Spotify Flow
-sb.table("reviews").insert({
-    "submission_id": DJ_SUBMISSION_IDS[0],
-    "judge_id": str(JUDGE1_ID),
-    "event_id": EVENT2_ID,
-    "scores": json.dumps({
-        DJ_CRITERIA_IDS[0]: 9,   # Creativity
-        DJ_CRITERIA_IDS[1]: 8,   # Usability
-        DJ_CRITERIA_IDS[2]: 9,   # Visual Design
-        DJ_CRITERIA_IDS[3]: 7,   # Rationale
-    }),
-    "notes": "Stunning visual direction — the mood board concept is genuinely novel. The gesture controls feel natural. Would love to see accessibility considerations for the gesture-based navigation.",
-}).execute()
-# Mark assignment completed
-sb.table("judge_assignments").update({"status": "completed"}).eq("judge_id", str(JUDGE1_ID)).eq("submission_id", DJ_SUBMISSION_IDS[0]).execute()
-log("Judge 1 reviewed: Spotify Flow (9/8/9/7)")
-
-# Judge 1 reviewed MapSense
-sb.table("reviews").insert({
-    "submission_id": DJ_SUBMISSION_IDS[1],
-    "judge_id": str(JUDGE1_ID),
-    "event_id": EVENT2_ID,
-    "scores": json.dumps({
-        DJ_CRITERIA_IDS[0]: 8,
-        DJ_CRITERIA_IDS[1]: 10,
-        DJ_CRITERIA_IDS[2]: 7,
-        DJ_CRITERIA_IDS[3]: 9,
-    }),
-    "notes": "Incredible attention to accessibility. The haptic feedback system is well thought out. Visual design could be more polished, but the UX reasoning is best-in-class. This should be shared with Google's accessibility team.",
-}).execute()
-sb.table("judge_assignments").update({"status": "completed"}).eq("judge_id", str(JUDGE1_ID)).eq("submission_id", DJ_SUBMISSION_IDS[1]).execute()
-log("Judge 1 reviewed: MapSense (8/10/7/9)")
-
-# Judge 2 reviewed Spotify Flow
-sb.table("reviews").insert({
-    "submission_id": DJ_SUBMISSION_IDS[0],
-    "judge_id": str(JUDGE2_ID),
-    "event_id": EVENT2_ID,
-    "scores": json.dumps({
-        DJ_CRITERIA_IDS[0]: 8,
-        DJ_CRITERIA_IDS[1]: 9,
-        DJ_CRITERIA_IDS[2]: 8,
-        DJ_CRITERIA_IDS[3]: 8,
-    }),
-    "notes": "Great rethinking of queue management. The clustering by mood/energy is a feature I'd actually want. Consider how this scales for playlists with 500+ songs.",
-}).execute()
-sb.table("judge_assignments").update({"status": "completed"}).eq("judge_id", str(JUDGE2_ID)).eq("submission_id", DJ_SUBMISSION_IDS[0]).execute()
-log("Judge 2 reviewed: Spotify Flow (8/9/8/8)")
-
-
-# ════════════════════════════════════════════════════════════════
-# SUMMARY
-# ════════════════════════════════════════════════════════════════
-section("Seed complete!")
-
-print(f"""
-{B}Accounts{X} (all passwords: {Y}{PASSWORD}{X})
-  {G}Organizer:{X}   hello@tusharkhatri.in
-  {G}Judge 1:{X}     khatritushar420@gmail.com
-  {G}Judge 2:{X}     khatritushar320@gmail.com
-  {G}Participants:{X} alice@demo.juryline.dev, bob@demo.juryline.dev,
-                 carol@demo.juryline.dev, dan@demo.juryline.dev,
-                 emma@demo.juryline.dev
-
-{B}Events{X}
-  {C}HackSphere 2026{X}    — open, 8 form fields, 5 criteria, 5 submissions, 2 judges
-  {C}DesignJam Spring{X}   — judging, 6 form fields, 4 criteria, 4 submissions, 3 reviews done
-  {C}CodeVault CTF 2026{X} — draft (future event, no fields yet)
-
-{B}Review Progress{X} (DesignJam)
-  Judge 1 has reviewed 2/4 submissions
-  Judge 2 has reviewed 1/4 submissions
-  "Spotify Flow" is fully reviewed (2/2 judges)
-""")
+section("SEED DONE")
+print(f"Organizer: hello@tusharkhatri.in | {PASSWORD}")
+print(f"Judge:     khatritushar420@gmail.com | {PASSWORD}")
