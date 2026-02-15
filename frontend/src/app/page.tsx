@@ -88,44 +88,44 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
 
 /* ── How-It-Works step data ── */
 const STEPS = [
-  { icon: HiOutlineDocumentPlus, label: "Create Event", desc: "Set up your hackathon with custom criteria & weights" },
-  { icon: HiOutlineInboxArrowDown, label: "Collect Submissions", desc: "Dynamic forms with 11 field types + file uploads" },
-  { icon: HiOutlineCpuChip, label: "AI Assigns Judges", desc: "Archestra.ai distributes submissions fairly" },
-  { icon: HiOutlineHandThumbUp, label: "Card-Based Review", desc: "Judges rate with sliders and keyboard shortcuts" },
-  { icon: HiOutlineTrophy, label: "Instant Leaderboard", desc: "Live scores, bias reports, and CSV export" },
+  { icon: HiOutlineDocumentPlus, label: "Create Event", desc: "Set up criteria, weights, and custom submission forms" },
+  { icon: HiOutlineUserGroup, label: "Invite Judges", desc: "Share a magic link to onboard your judging panel instantly" },
+  { icon: HiOutlineInboxArrowDown, label: "Collect Entries", desc: "Participants submit projects via your custom form" },
+  { icon: HiOutlineCpuChip, label: "Auto-Assign", desc: "Agents intelligently distribute workload across judges" },
+  { icon: HiOutlineTrophy, label: "Export Winners", desc: "Download final ranked results as a CSV in one click" },
 ];
 
 /* ── Feature card data ── */
 const FEATURES = [
   {
-    icon: HiOutlineSparkles,
-    title: "Dynamic Form Builder",
-    desc: "11 field types including file uploads, video links, and rich text. Build forms as powerful as Google Forms.",
+    icon: HiOutlineUserGroup,
+    title: "Judge Invite Links",
+    desc: "Scale your panel in seconds. Generate a unique magic link, share it, and watch judges onboard themselves instantly.",
+  },
+  {
+    icon: HiOutlineCpuChip,
+    title: "Smart Load Balancing",
+    desc: "No more manual assignment. Archestra agents distribute submissions evenly across your judge panel automatically.",
   },
   {
     icon: HiOutlineClipboardDocumentList,
-    title: "Card-Based Reviews",
-    desc: "Judges swipe through submissions with sliders and keyboard shortcuts. Navigate and submit efficiently.",
-  },
-  {
-    icon: HiOutlineUserGroup,
-    title: "Smart Judge Assignment",
-    desc: "Auto-assign submissions to judges with configurable judges-per-submission. Track progress in real-time.",
+    title: "Custom Scoring Rubrics",
+    desc: "Define your own criteria and weights. creating a standardized framework for fair and consistent evaluation.",
   },
   {
     icon: HiOutlineChartBar,
-    title: "Live Leaderboard",
-    desc: "Weighted scoring aggregation, expandable score breakdowns, and one-click CSV export.",
+    title: "Real-Time Leaderboard",
+    desc: "Watch scores roll in live. See who's winning and export the final results to CSV with a single click.",
   },
   {
     icon: HiOutlineShieldCheck,
     title: "Bias Detection",
-    desc: "Statistical outlier analysis flags judges who score significantly above or below average.",
+    desc: "Statistical analysis flags judges who are consistently scoring too high or too low compared to the average.",
   },
   {
-    icon: HiOutlineBolt,
-    title: "AI-Powered Orchestration",
-    desc: "Archestra.ai handles judge assignment, score aggregation, and feedback generation via A2A protocol.",
+    icon: HiOutlineSparkles,
+    title: "AI Feedback Synthesis",
+    desc: "Give every participant valuable feedback. Agents synthesize judge comments into constructive advice automatically.",
   },
 ];
 
@@ -134,50 +134,42 @@ const FLOW_STEPS = [
   {
     icon: HiOutlineDocumentPlus,
     title: "Create Event",
-    subtitle: "Set criteria & weights",
+    subtitle: "Criteria & weights",
     color: "brand.400",
     bgColor: "brand.500",
-    mockLines: ["Event: AI Hackathon 2025", "Criteria: Innovation (1.5x)", "Judges per submission: 2"],
+    mockLines: ["Event: Global AI Hackathon", "Criteria: Innovation (1.5x)", "Judges needed: 15"],
   },
   {
-    icon: HiOutlineSquares2X2,
-    title: "Build Forms",
-    subtitle: "11 field types",
+    icon: HiOutlineUserGroup,
+    title: "Invite Panel",
+    subtitle: "Magic link sharing",
     color: "accent.400",
     bgColor: "accent.500",
-    mockLines: ["Project Name [short_text]", "Description  [long_text]", "Demo URL     [url]"],
+    mockLines: ["Generating invite link...", "juryline.com/invite/8x92m", "12 judges joined \u2705"],
   },
   {
     icon: HiOutlineInboxArrowDown,
-    title: "Collect Submissions",
-    subtitle: "Dynamic entry forms",
+    title: "Collect Entries",
+    subtitle: "Dynamic forms",
     color: "blue.400",
     bgColor: "blue.500",
-    mockLines: ["ByteCooks   \u2192 AI Recipe Gen", "GreenByte   \u2192 EcoTrack", "NeuralNotes \u2192 StudyBuddy AI"],
+    mockLines: ["Team Alpha submitted", "Team Beta submitted", "Validation: Passed \u2705"],
   },
   {
     icon: HiOutlineCpuChip,
-    title: "AI Assigns Judges",
-    subtitle: "Fair distribution",
+    title: "Load Balancing",
+    subtitle: "Orchestration",
     color: "purple.400",
     bgColor: "purple.500",
-    mockLines: ["Sam Rivera  \u2192 5 submissions", "Jordan Lee  \u2192 5 submissions", "Balanced distribution: OK"],
-  },
-  {
-    icon: HiOutlineHandThumbUp,
-    title: "Card-Based Review",
-    subtitle: "Slider ratings + notes",
-    color: "orange.400",
-    bgColor: "orange.500",
-    mockLines: ["Innovation:  \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591 8/10", "Technical:   \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591\u2591 7/10", "Submit review \u2192 Ctrl+Enter"],
+    mockLines: ["Distributing 150 entries...", "Judge load: 10 each", "Assignments complete \u2705"],
   },
   {
     icon: HiOutlineTrophy,
-    title: "Instant Leaderboard",
-    subtitle: "Ranked results + export",
+    title: "Final Results",
+    subtitle: "Export to CSV",
     color: "yellow.400",
     bgColor: "yellow.500",
-    mockLines: ["#1 ByteCooks     \u2192 8.7 avg", "#2 GreenByte     \u2192 8.2 avg", "#3 NeuralNotes   \u2192 7.5 avg"],
+    mockLines: ["#1 Team Beta (9.2)", "#2 Team Alpha (8.9)", "Exporting results.csv..."],
   },
 ];
 
@@ -191,7 +183,14 @@ function RotatingFlowCard() {
     return () => clearInterval(interval);
   }, []);
 
-  const step = FLOW_STEPS[activeStep];
+  // Handle hot-reload case where activeStep might exceed new array length
+  const step = FLOW_STEPS[activeStep] || FLOW_STEPS[0];
+
+  useEffect(() => {
+    if (activeStep >= FLOW_STEPS.length) {
+      setActiveStep(0);
+    }
+  }, [activeStep]);
 
   return (
     <Box position="relative" w="full" maxW="420px">
@@ -426,9 +425,9 @@ export default function Home() {
                 backdropFilter="blur(10px)"
                 letterSpacing="wide"
               >
-                <HStack spacing={2}>
-                  <Icon as={HiOutlineSparkles} boxSize={3.5} />
-                  <Text as="span">AI-Powered Hackathon Judging</Text>
+                <HStack spacing={2} display="inline-flex">
+                  <Icon as={HiOutlineShieldCheck} boxSize={3.5} />
+                  <Text as="span">The End of Spreadsheet Chaos</Text>
                 </HStack>
               </Badge>
 
@@ -439,10 +438,11 @@ export default function Home() {
                 lineHeight="1.05"
                 bgGradient="linear(to-r, white, brand.200)"
                 bgClip="text"
+                position="relative"
               >
-                Hackathon Judging,{" "}
+                Fair Judging,{" "}
                 <Box as="span" bgGradient="linear(to-r, brand.300, accent.300)" bgClip="text">
-                  Reimagined.
+                  Zero Friction.
                 </Box>
               </Heading>
 
@@ -450,10 +450,10 @@ export default function Home() {
                 fontSize={{ base: "lg", md: "xl" }}
                 color="whiteAlpha.700"
                 lineHeight="1.7"
-                maxW="500px"
+                maxW="560px"
               >
-                Create custom submission forms, collect entries, assign judges with AI,
-                and get instant leaderboards — all in one beautifully crafted platform.
+                Stop forcing judges to switch between demos, forms, and spreadsheets.
+                Juryline unifies everything into a single, immersive view.
               </Text>
 
               <HStack spacing={4} pt={2}>
@@ -554,7 +554,7 @@ export default function Home() {
             >
               {[
                 { value: 11, suffix: "+", label: "Field Types" },
-                { value: 5, suffix: "", label: "Scoring Criteria" },
+                { value: 99, suffix: "+", label: "Scoring Criteria" },
                 { value: 100, suffix: "%", label: "Real-Time" },
                 { value: 1, suffix: "", label: "Click Export" },
               ].map((stat) => (
