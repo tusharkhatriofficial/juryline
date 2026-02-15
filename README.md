@@ -1,4 +1,5 @@
 # Juryline
+<img width="1416" height="728" alt="Screenshot 2026-02-15 at 7 27 28 PM" src="https://github.com/user-attachments/assets/ef921e5f-bf72-483b-a552-d07281701541" />
 
 **The AI-Native Hackathon Judging Platform**
 
